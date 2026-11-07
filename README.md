@@ -17,6 +17,14 @@ Web app che aiuta le matricole ad abituarsi allo studio universitario: un planne
 
 È un unico file HTML, senza installazione: apri `index.html` nel browser, oppure pubblicalo con GitHub Pages (Settings → Pages → Deploy from a branch → `main`, cartella `/`).
 
+## Calendario con link iCal (qualsiasi calendario, senza configurazione)
+
+Nel **Piano**, la scheda **Il tuo calendario** accetta il link privato iCal di Google Calendar, Apple iCloud, Outlook, Proton Calendar, Nextcloud e di qualsiasi calendario compatibile. La funzione `netlify/functions/ics.js` legge il calendario con [ical.js](https://github.com/kewisch/ical.js) (eventi ricorrenti, eccezioni, fusi orari) e restituisce all'app **solo gli intervalli occupati**, senza titoli né dettagli. Gli eventi "tutto il giorno" e quelli segnati come "libero" non bloccano il tempo. Gli impegni si aggiornano da soli quando l'app viene riaperta dopo più di 3 ore.
+
+Con **Scarica le sessioni (.ics)** le sessioni dei prossimi 14 giorni e gli appelli si importano in qualsiasi calendario.
+
+Il link iCal è privato come una password: resta salvato solo nel browser (o nell'account) di chi lo inserisce.
+
 ## Google Calendar
 
 Sul sito pubblico lo studente può collegare Google Calendar:

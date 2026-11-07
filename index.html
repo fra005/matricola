@@ -161,6 +161,9 @@ dl.gloss dd{margin:2px 0 0;color:var(--muted)}
 #fc .ev-done{opacity:.5;text-decoration:line-through}
 #fc .fc-list-event-title{color:var(--ink)}
 #week-info{min-width:0;flex:1 1 260px}
+details.howto summary{cursor:pointer;color:var(--accent);font-weight:700;margin-top:6px}
+details.howto ul{padding-left:1.2em;margin:.5em 0}
+#ics-box{display:flex;flex-direction:column;gap:8px}
 /* Catalogo e pagine d'esame */
 .catalog{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
 .cat-year{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -247,9 +250,24 @@ footer{margin-top:28px;color:var(--muted);font-size:.85rem;display:flex;gap:8px 
             <div id="exam-list"></div>
           </div>
           <div class="card" id="gcal-card">
-            <div class="card-head"><h2>Google Calendar</h2><span class="small muted" id="gcal-when"></span></div>
-            <p class="small muted">Leggo solo quando sei occupato, non i titoli dei tuoi eventi, e metto lo studio negli spazi liberi. Le sessioni vanno in un calendario separato, "Matricola · Studio".</p>
-            <div class="row"><button class="primary" id="gcal-sync" hidden>Collega Google Calendar</button><button class="ghost" id="gcal-off" hidden>Scollega</button></div>
+            <div class="card-head"><h2>Il tuo calendario</h2><span class="small muted" id="gcal-when"></span></div>
+            <p class="small muted">Collega il calendario che usi già: l'app legge solo quando sei occupato, non i titoli dei tuoi eventi, e mette lo studio negli spazi liberi.</p>
+            <div id="ics-box" hidden>
+              <label class="f">Link iCal del tuo calendario (Google, Apple, Outlook, Proton…)
+                <input type="url" id="ics-url" placeholder="https://… oppure webcal://…" autocomplete="off" spellcheck="false"></label>
+              <details class="howto"><summary class="small">Dove trovo il link?</summary>
+                <ul class="small muted">
+                  <li><strong>Google Calendar</strong> (dal computer): Impostazioni → il tuo calendario → Integra il calendario → <em>Indirizzo segreto in formato iCal</em>.</li>
+                  <li><strong>Apple iCloud</strong>: app Calendario → (i) accanto al calendario → <em>Calendario pubblico</em> → Condividi link.</li>
+                  <li><strong>Outlook</strong>: Impostazioni → Calendario → Calendari condivisi → <em>Pubblica un calendario</em> → link ICS.</li>
+                  <li><strong>Proton Calendar</strong>: Impostazioni del calendario → <em>Condividi con link</em>.</li>
+                  <li><strong>Nextcloud</strong>: menu del calendario → <em>Copia link di iscrizione</em>.</li>
+                </ul>
+                <p class="small muted">Il link è privato come una password: chi lo ha può vedere il tuo calendario. Resta salvato solo nel tuo browser o account.</p>
+              </details>
+              <div class="row"><button class="primary" id="ics-sync">Leggi gli impegni</button></div>
+            </div>
+            <div class="row"><button id="gcal-sync" hidden>Collega Google Calendar</button><button class="ghost" id="ics-export" hidden>Scarica le sessioni (.ics)</button><button class="ghost" id="gcal-off" hidden>Scollega</button></div>
             <p class="small" id="gcal-status" role="status"></p>
           </div>
           <div class="card">
@@ -1473,6 +1491,65 @@ function calCapacity(dk){
   return place(dk, [{ e: '_', h: 24 }]).reduce((a, s) => a + (s.b - s.a), 0) / 60;
 }
 
+// Intervalli occupati [inizio, fine] → minuti occupati per giorno (spezza gli eventi che passano la mezzanotte)
+function busyByDay(list, t0, days){
+  const busy = {};
+  for (let i = 0; i < days; i++) busy[key(addDays(t0, i))] = [];
+  list.forEach(([start, end]) => {
+    const s = new Date(start), e = new Date(end);
+    let d = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+    while (d < e) {
+      const next = addDays(d, 1), dk = key(d);
+      if (dk in busy) busy[dk].push([Math.round((Math.max(s, d) - d) / 60000), Math.round((Math.min(e, next) - d) / 60000)]);
+      d = next;
+    }
+  });
+  return busy;
+}
+
+/* Link iCal: qualsiasi calendario (Google, Apple, Outlook, Proton, Nextcloud…) letto tramite la funzione Netlify ics */
+async function syncIcs(url, quiet){
+  const btn = $('#ics-sync'); if (btn) btn.disabled = true;
+  try {
+    if (!quiet) gcalStatus('Leggo il calendario…');
+    const t0 = today();
+    const r = await fetch('/.netlify/functions/ics', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, from: t0.toISOString(), to: addDays(t0, CAL_DAYS).toISOString() }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw { message: d.error || (r.status === 404 ? 'La lettura dei calendari non è attiva su questo sito.' : 'Lettura del calendario non riuscita.') };
+    S.cal = { connected: true, source: 'ics', icsUrl: url, busy: busyByDay(d.busy || [], t0, CAL_DAYS), syncedAt: Date.now(), impegni: d.events || 0, calId: S.cal && S.cal.calId };
+    S.isExample = false; save(); renderAll();
+    gcalStatus(`Fatto: ${S.cal.impegni} impegni nei prossimi ${CAL_DAYS} giorni. Il piano ora evita questi orari.`);
+  } catch(e) { if (!quiet) gcalStatus(e && e.message ? e.message : 'Lettura del calendario non riuscita.', true); }
+  if (btn) btn.disabled = false;
+}
+
+// File .ics con le sessioni dei prossimi 14 giorni e gli appelli, da importare in qualsiasi calendario
+function icsExport(){
+  const P = computePlan(), t0 = today(), stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+  const utc = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+  const escI = t => String(t).replace(/[\\;,]/g, m => '\\' + m).replace(/\n/g, '\\n');
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Matricola//Planner//IT', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:Matricola · Studio'];
+  for (let i = 0; i < WRITE_DAYS; i++) {
+    const d = addDays(t0, i), dk = key(d);
+    place(dk, P.plan[dk] || []).forEach((s, n) => {
+      const ex = exById(s.e); if (!ex) return;
+      const st = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, s.a), en = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, s.b);
+      lines.push('BEGIN:VEVENT', `UID:matricola-${dk}-${s.e}-${n}@matricola`, `DTSTAMP:${stamp}`, `DTSTART:${utc(st)}`, `DTEND:${utc(en)}`,
+        `SUMMARY:${escI('Studio: ' + ex.name + (s.final ? ' (ripasso finale)' : ''))}`, 'END:VEVENT');
+    });
+  }
+  S.exams.filter(e => e.date && e.date >= key(t0)).forEach(e => {
+    lines.push('BEGIN:VEVENT', `UID:matricola-appello-${e.id}@matricola`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${e.date.replace(/-/g, '')}`,
+      `DTEND;VALUE=DATE:${key(addDays(parse(e.date), 1)).replace(/-/g, '')}`, `SUMMARY:${escI('Appello: ' + e.name)}`, 'END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([lines.join('\r\n') + '\r\n'], { type: 'text/calendar' }));
+  a.download = 'matricola-studio.ics'; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
 function loadGis(){
   if (!gisPromise) gisPromise = new Promise((res, rej) => {
     if (window.google && google.accounts && google.accounts.oauth2) return res();
@@ -1520,18 +1597,8 @@ async function syncCalendar(){
     const fb = await gcal('POST', '/freeBusy', { timeMin: t0.toISOString(), timeMax: tMax.toISOString(), timeZone: TZ, items: [{ id: 'primary' }] });
     const cal = fb.calendars && fb.calendars.primary;
     if (!cal || (cal.errors && cal.errors.length)) throw { message: 'Google non ha restituito la disponibilità del calendario principale.' };
-    const busy = {};
-    for (let i = 0; i < CAL_DAYS; i++) busy[key(addDays(t0, i))] = [];
-    (cal.busy || []).forEach(({ start, end }) => {
-      const s = new Date(start), e = new Date(end);
-      let d = new Date(s.getFullYear(), s.getMonth(), s.getDate());
-      while (d < e) {
-        const next = addDays(d, 1), dk = key(d);
-        if (dk in busy) busy[dk].push([Math.round((Math.max(s, d) - d) / 60000), Math.round((Math.min(e, next) - d) / 60000)]);
-        d = next;
-      }
-    });
-    S.cal = Object.assign({}, S.cal, { connected: true, busy, syncedAt: Date.now(), impegni: (cal.busy || []).length });
+    const busy = busyByDay((cal.busy || []).map(b => [b.start, b.end]), t0, CAL_DAYS);
+    S.cal = Object.assign({}, S.cal, { connected: true, source: 'google', busy, syncedAt: Date.now(), impegni: (cal.busy || []).length });
     S.isExample = false; save(); renderAll();
 
     // 2. Calendario dello studio (creato dall'app, l'unico che l'app può modificare)
@@ -1590,23 +1657,28 @@ function disconnectCalendar(){
   gToken = null;
   S.cal = S.cal && S.cal.calId ? { calId: S.cal.calId } : null;
   save(); renderAll();
-  gcalStatus('Scollegato. Il planner torna a usare le ore settimanali. Il calendario "Matricola · Studio" resta su Google: puoi eliminarlo da lì.');
+  gcalStatus('Scollegato. Il planner torna a usare le ore settimanali.' + (S.cal && S.cal.calId ? ' Il calendario "Matricola · Studio" resta su Google: puoi eliminarlo da lì.' : ''));
 }
 
 function renderGcal(){
   const card = $('#gcal-card'); if (!card) return;
-  const avail = useServer && !!GOOGLE_CLIENT_ID;
-  $('#gcal-sync').hidden = !avail;
-  $('#gcal-off').hidden = !(avail && S.cal && S.cal.connected);
-  $('#gcal-sync').textContent = S.cal && S.cal.connected ? 'Sincronizza di nuovo' : 'Collega Google Calendar';
-  const when = $('#gcal-when');
-  when.textContent = S.cal && S.cal.connected && S.cal.syncedAt ? 'Aggiornato ' + new Date(S.cal.syncedAt).toLocaleString('it-IT', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
-  if (!avail && !$('#gcal-status').textContent) gcalStatus(onClaude || !useServer
-    ? 'Disponibile sul sito pubblico dell\'app: da qui Google non consente l\'accesso.'
-    : 'Non ancora attivo: chi gestisce il sito deve inserire il Client ID di Google (vedi README).');
+  const google = useServer && !!GOOGLE_CLIENT_ID, conn = !!(S.cal && S.cal.connected);
+  $('#ics-box').hidden = !useServer;
+  if (useServer && S.cal && S.cal.icsUrl && document.activeElement !== $('#ics-url')) $('#ics-url').value = S.cal.icsUrl;
+  $('#ics-sync').textContent = conn && S.cal.source === 'ics' ? 'Aggiorna gli impegni' : 'Leggi gli impegni';
+  $('#gcal-sync').hidden = !google;
+  $('#gcal-sync').textContent = conn && S.cal.source === 'google' ? 'Sincronizza di nuovo Google' : 'Oppure collega Google Calendar';
+  $('#ics-export').hidden = !useServer || !S.exams.length;
+  $('#gcal-off').hidden = !(useServer && conn);
+  $('#gcal-when').textContent = conn && S.cal.syncedAt ? 'Aggiornato ' + new Date(S.cal.syncedAt).toLocaleString('it-IT', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+  if (!useServer && !$('#gcal-status').textContent) gcalStatus('Disponibile sul sito pubblico dell\'app: da qui non è possibile leggere calendari esterni.');
 }
 $('#gcal-sync').addEventListener('click', syncCalendar);
 $('#gcal-off').addEventListener('click', disconnectCalendar);
+$('#ics-sync').addEventListener('click', () => { const u = $('#ics-url').value.trim(); if (!u) { $('#ics-url').focus(); return gcalStatus('Incolla prima il link del tuo calendario.', true); } syncIcs(u); });
+$('#ics-export').addEventListener('click', icsExport);
+// All'apertura riaggiorno da solo gli impegni del link iCal se sono vecchi di più di 3 ore
+if (useServer && S.cal && S.cal.source === 'ics' && S.cal.icsUrl && Date.now() - (S.cal.syncedAt || 0) > 3 * 3600000) setTimeout(() => syncIcs(S.cal.icsUrl, true), 500);
 if (useServer && GOOGLE_CLIENT_ID) loadGis().catch(() => {});
 
 
@@ -1650,8 +1722,8 @@ function onDrop(info){
 function renderWeekNote(){
   const n = $('#week-note'); if (!n) return;
   n.textContent = S.cal && S.cal.connected
-    ? 'Le sessioni di studio sono negli spazi liberi tra i tuoi impegni di Google Calendar.'
-    : 'Le sessioni sono nella tua fascia di studio (Esami → Il tuo tempo). Collega Google Calendar nel Piano per evitare i tuoi impegni.';
+    ? 'Le sessioni di studio sono negli spazi liberi tra gli impegni del tuo calendario.'
+    : 'Le sessioni sono nella tua fascia di studio (Esami → Il tuo tempo). Collega il tuo calendario nel Piano per evitare i tuoi impegni.';
 }
 function renderWeekInfo(){
   renderWeekNote();

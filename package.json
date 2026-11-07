@@ -1,0 +1,8 @@
+{
+  "name": "matricola",
+  "private": true,
+  "description": "Planner di studio per matricole: dipendenze delle funzioni Netlify",
+  "dependencies": {
+    "ical.js": "1.5.0"
+  }
+}
