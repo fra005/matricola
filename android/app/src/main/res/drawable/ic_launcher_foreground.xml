@@ -1,0 +1,6 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Una "M" come nel logo dell'app, inchiostro blu sull'evidenziatore giallo -->
+    <path android:fillColor="#18213D"
+        android:pathData="M32,74 L32,34 L43,34 L54,51 L65,34 L76,34 L76,74 L66,74 L66,51 L54,68 L42,51 L42,74 Z" />
+</vector>

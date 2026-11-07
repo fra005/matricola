@@ -1601,8 +1601,11 @@ function icsExport(){
       `DTEND;VALUE=DATE:${key(addDays(parse(e.date), 1)).replace(/-/g, '')}`, `SUMMARY:${escI('Appello: ' + e.name)}`, 'END:VEVENT');
   });
   lines.push('END:VCALENDAR');
+  const ics = lines.join('\r\n') + '\r\n';
+  // Nell'app Android il file si salva in Download tramite il ponte nativo
+  if (window.MatricolaAndroid && window.MatricolaAndroid.saveFile) { window.MatricolaAndroid.saveFile('matricola-studio.ics', 'text/calendar', ics); return; }
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([lines.join('\r\n') + '\r\n'], { type: 'text/calendar' }));
+  a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
   a.download = 'matricola-studio.ics'; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
@@ -1719,7 +1722,9 @@ function disconnectCalendar(){
 
 function renderGcal(){
   const card = $('#gcal-card'); if (!card) return;
-  const google = useServer && !!GOOGLE_CLIENT_ID, conn = !!(S.cal && S.cal.connected);
+  // Dentro l'app Android Google non consente il proprio login (WebView): lì si usano link iCal o file .ics
+  const inApp = /MatricolaApp/.test(navigator.userAgent);
+  const google = useServer && !!GOOGLE_CLIENT_ID && !inApp, conn = !!(S.cal && S.cal.connected);
   $('#ics-box').hidden = !useServer;
   if (useServer && S.cal && S.cal.icsUrl && document.activeElement !== $('#ics-url')) $('#ics-url').value = S.cal.icsUrl;
   $('#ics-sync').textContent = conn && S.cal.source === 'ics' ? 'Aggiorna gli impegni' : 'Leggi gli impegni';

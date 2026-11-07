@@ -71,3 +71,17 @@ Dopo aver cambiato le variabili, rilancia la pubblicazione da **Deploys → Trig
 
 - Caricamento delle dispense, per far rispondere il tutor sul materiale del corso
 - Collegamento a Moodle e timer Pomodoro
+
+## App Android
+
+La cartella `android/` contiene l'app Android: un'app nativa leggera (nessuna libreria esterna) che apre il sito a schermo intero. I dati restano sul telefono; AI e lettura dei calendari usano le funzioni del sito, quindi serve internet. I link esterni si aprono nel browser, i file `.ics` si caricano dal telefono e le sessioni esportate si salvano in **Download**. Il login con Google non è disponibile dentro l'app (Google lo vieta nelle WebView): si usano il link iCal o il file `.ics`.
+
+Per compilare servono JDK 17+, Gradle 8.9+ e l'Android SDK (platform 35):
+
+```bash
+cd android
+echo "sdk.dir=/percorso/android-sdk" > local.properties
+gradle assembleRelease
+```
+
+La firma usa `android/keystore.properties` e la chiave in `android/keystore/`, che **non** sono nel repository: senza la stessa chiave non si può aggiornare l'app già installata (bisogna disinstallarla e reinstallarla).
