@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>html{-webkit-text-size-adjust:100%}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Matricola</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: un "libretto" digitale — intestazione con evidenziatore, schede in griglia a due colonne che diventa una su telefono */
+:root{
+  --paper:#F5F6FA; --surface:#FFFFFF; --ink:#18213D; --muted:#596181; --line:#DCE0EB;
+  --accent:#2B47C9; --accent-fg:#FFFFFF; --accent-soft:#E7EBFB;
+  --mark:#F3E45A; --mark-ink:#18213D;
+  --warn-bg:#FFF2D8; --warn:#7A4E00; --ok:#1C7A4B; --ok-bg:#E2F4EA; --bad:#B3261E; --bad-bg:#FBE6E4;
+  --e0:#2B47C9; --e1:#D4572B; --e2:#1C8A6D; --e3:#8E47C2; --e4:#B38A00; --e5:#CC336A;
+  --f-display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#0F1320; --surface:#171C2C; --ink:#E7EAF4; --muted:#9AA2BF; --line:#2A3150;
+  --accent:#93A6FF; --accent-fg:#0F1320; --accent-soft:#232B4A;
+  --mark:#5E5412; --mark-ink:#FFF7C2;
+  --warn-bg:#3A2A08; --warn:#F2C46B; --ok:#62D49D; --ok-bg:#12301F; --bad:#FF8A80; --bad-bg:#3A1514;
+  --e0:#93A6FF; --e1:#FF8C5E; --e2:#4FD1A8; --e3:#C792EA; --e4:#E8C547; --e5:#FF7AA8;
+  color-scheme:dark }}
+:root[data-theme="dark"]{
+  --paper:#0F1320; --surface:#171C2C; --ink:#E7EAF4; --muted:#9AA2BF; --line:#2A3150;
+  --accent:#93A6FF; --accent-fg:#0F1320; --accent-soft:#232B4A;
+  --mark:#5E5412; --mark-ink:#FFF7C2;
+  --warn-bg:#3A2A08; --warn:#F2C46B; --ok:#62D49D; --ok-bg:#12301F; --bad:#FF8A80; --bad-bg:#3A1514;
+  --e0:#93A6FF; --e1:#FF8C5E; --e2:#4FD1A8; --e3:#C792EA; --e4:#E8C547; --e5:#FF7AA8;
+  color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 48px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h2{font-size:1.25rem;font-weight:800}
+h3{font-size:1.02rem;font-weight:600}
+p{margin:0}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:.875rem}
+.mark{background:linear-gradient(transparent 38%, var(--mark) 38%, var(--mark) 88%, transparent 88%);color:var(--mark-ink);padding:0 .15em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:18px}
+.brand h1{font-size:clamp(2rem,6vw,2.8rem);font-weight:800;letter-spacing:-.02em}
+.brand p{color:var(--muted);margin-top:4px}
+nav.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;flex-wrap:wrap}
+nav.tabs a{color:var(--ink);text-decoration:none;padding:7px 14px;border-radius:999px;font-weight:700;font-size:.92rem}
+nav.tabs a[aria-current="page"]{background:var(--accent);color:var(--accent-fg)}
+nav.tabs a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.stack{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+
+.banner{border-radius:var(--r);padding:12px 14px;display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap;justify-content:space-between;margin-bottom:16px}
+.banner.info{background:var(--accent-soft)}
+.banner.warn{background:var(--warn-bg);color:var(--warn)}
+.banner p{min-width:0;flex:1 1 280px}
+
+button,.btn{font:inherit;font-weight:700;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+button.ghost{background:transparent}
+button.danger{color:var(--bad)}
+button:disabled{opacity:.55;cursor:default}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:84px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.85rem;font-weight:700;color:var(--muted);min-width:0}
+
+/* Oggi */
+.today-date{font-family:var(--f-display);font-size:1.5rem;font-weight:800;text-transform:capitalize}
+.sessions{display:flex;flex-direction:column;gap:8px;list-style:none;margin:0;padding:0}
+.session{display:grid;grid-template-columns:auto 6px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
+.session input{width:22px;height:22px;accent-color:var(--accent)}
+.session .sw{width:6px;height:100%;min-height:28px;border-radius:3px}
+.session.done .name{text-decoration:line-through;color:var(--muted)}
+.tag{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--warn-bg);color:var(--warn);margin-left:6px;vertical-align:middle}
+
+/* Settimana */
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.day{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:0}
+.day .bars{height:120px;display:flex;flex-direction:column-reverse;gap:2px;background:var(--paper);border-radius:6px;padding:3px;overflow:hidden}
+.day .seg{border-radius:3px;min-height:4px}
+.day .lbl{text-align:center;font-size:.78rem;line-height:1.25}
+.day .lbl b{display:block;font-size:.92rem}
+.day.is-today .lbl b{color:var(--accent)}
+.day .rest{flex:1;display:flex;align-items:center;justify-content:center;font-size:.72rem;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.82rem}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+
+/* Libretto esami */
+.exam-row{display:flex;flex-direction:column;gap:6px;padding-block:10px;border-top:1px solid var(--line)}
+.exam-row:first-of-type{border-top:0;padding-top:0}
+.exam-row .r1{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.exam-row .r1 h3{display:flex;align-items:center;gap:8px;min-width:0}
+.bar{height:8px;background:var(--paper);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:999px}
+
+/* Editor esami */
+.ed-row{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,.7fr) minmax(0,1.3fr) minmax(0,1fr) minmax(0,.9fr) auto;gap:8px;align-items:end;padding-block:12px;border-top:1px solid var(--line)}
+.ed-row:first-of-type{border-top:0}
+@media (max-width:760px){.ed-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.ed-row .wide{grid-column:1/-1}}
+.daychips{display:flex;flex-wrap:wrap;gap:6px}
+.daychips label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer;font-weight:700;font-size:.9rem}
+.daychips input{width:auto;accent-color:var(--accent)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.confirm{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:.85rem}
+
+/* Tutor */
+.out{border-top:1px solid var(--line);padding-top:14px;max-width:68ch}
+.out p+p,.out ul{margin-top:.6em}
+.out ul{padding-left:1.2em;margin-bottom:0}
+.quiz{display:flex;flex-direction:column;gap:16px}
+.q{display:flex;flex-direction:column;gap:8px}
+.q .opts{display:flex;flex-direction:column;gap:6px}
+.q .opts button{text-align:left;font-weight:400}
+.q .opts button.right{background:var(--ok-bg);border-color:var(--ok);color:var(--ok);font-weight:700}
+.q .opts button.wrong{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.q .expl{font-size:.92rem;color:var(--muted)}
+.err{color:var(--bad)}
+
+/* Guida */
+.check{display:flex;flex-direction:column;gap:4px;list-style:none;padding:0;margin:0}
+.check label{display:flex;gap:10px;align-items:flex-start;padding:7px 4px;cursor:pointer}
+.check input{width:20px;height:20px;flex:none;margin-top:2px;accent-color:var(--accent)}
+.check input:checked+span{color:var(--muted);text-decoration:line-through}
+dl.gloss{margin:0;display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+dl.gloss dt{font-weight:700}
+dl.gloss dd{margin:2px 0 0;color:var(--muted)}
+.methods{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.method{border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:6px}
+footer{margin-top:28px;color:var(--muted);font-size:.85rem;display:flex;gap:8px 16px;flex-wrap:wrap;justify-content:space-between}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1><span class="mark">Matricola</span></h1>
+      <p>Il tuo primo anno, un esame alla volta.</p>
+    </div>
+    <nav class="tabs" aria-label="Sezioni">
+      <a href="#piano" data-view="piano">Piano</a>
+      <a href="#esami" data-view="esami">Esami</a>
+      <a href="#tutor" data-view="tutor">Tutor AI</a>
+      <a href="#guida" data-view="guida">Guida</a>
+    </nav>
+  </header>
+
+  <div id="example-banner" class="banner info" hidden>
+    <p><strong>Questi sono esami di esempio.</strong> Inserisci i tuoi esami e le date degli appelli per avere il tuo piano.</p>
+    <a class="btn" href="#esami">Inserisci i miei esami</a>
+  </div>
+
+  <main>
+    <!-- PIANO -->
+    <section id="v-piano" data-v="piano">
+      <div id="short-banner" class="banner warn" hidden><p id="short-text"></p><a class="btn" href="#esami">Modifica il piano</a></div>
+      <div class="grid">
+        <div class="stack">
+          <div class="card">
+            <div class="card-head"><h2>Oggi</h2><span class="muted small num" id="today-total"></span></div>
+            <div class="today-date" id="today-date"></div>
+            <ul class="sessions" id="today-list"></ul>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Prossimi 7 giorni</h2><span class="muted small" id="week-h"></span></div>
+            <div class="week" id="week"></div>
+            <div class="legend" id="legend"></div>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="card">
+            <div class="card-head"><h2>Il tuo libretto</h2><span class="muted small num" id="cfu-total"></span></div>
+            <div id="exam-list"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Coach settimanale</h2></div>
+            <p class="muted small">Il coach legge i tuoi progressi e ti dà consigli concreti per la settimana.</p>
+            <div><button class="primary" id="coach-btn">Come sto andando?</button></div>
+            <div class="out" id="coach-out" hidden></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ESAMI -->
+    <section id="v-esami" data-v="esami" hidden>
+      <div class="stack">
+        <div class="card">
+          <h2>Il tuo tempo</h2>
+          <div class="row">
+            <label class="f" style="max-width:220px">Ore di studio a settimana
+              <input type="number" id="weekly" min="1" max="80" step="1">
+            </label>
+            <p class="muted small" id="perday"></p>
+          </div>
+          <div>
+            <p class="small" style="font-weight:700;color:var(--muted);margin-bottom:6px">Giorni in cui studi</p>
+            <div class="daychips" id="daychips"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <h2>Esami del semestre</h2>
+            <div class="row"><button class="ghost" id="clear-ex" hidden>Rimuovi gli esempi</button><button class="primary" id="add-ex">Aggiungi esame</button></div>
+          </div>
+          <p class="muted small">Le ore stimate partono da 15 ore di studio per CFU. Per legge 1 CFU vale 25 ore di impegno totale, di cui circa 8–10 a lezione: il resto è studio tuo. Aumentale per gli esami che ti spaventano.</p>
+          <div id="editor"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TUTOR -->
+    <section id="v-tutor" data-v="tutor" hidden>
+      <div class="card">
+        <h2>Tutor AI</h2>
+        <p class="muted small">Chiedi una spiegazione o fatti interrogare con un quiz. Le risposte sono generate dall'AI: verificale sempre su dispense e libri del corso.</p>
+        <div id="tutor-off" class="banner warn" hidden><p>Il tutor AI non è disponibile in questa vista. Aprila su claude.ai per usarlo.</p></div>
+        <div class="row">
+          <label class="f" style="flex:1 1 200px">Materia<select id="t-subj"></select></label>
+          <label class="f" style="flex:1 1 200px">Livello
+            <select id="t-level">
+              <option value="semplice">Semplice, come a un amico</option>
+              <option value="normale" selected>Normale</option>
+              <option value="esame">Da esame, rigoroso</option>
+            </select>
+          </label>
+        </div>
+        <label class="f">Argomento o domanda
+          <textarea id="t-q">Che cos'è il limite di una funzione e perché serve?</textarea>
+        </label>
+        <div class="row">
+          <button class="primary" id="t-explain">Spiegamelo</button>
+          <button id="t-quiz">Fammi un quiz</button>
+          <button class="ghost" id="t-stop" hidden>Interrompi</button>
+        </div>
+        <div class="out" id="t-out" hidden></div>
+      </div>
+    </section>
+
+    <!-- GUIDA -->
+    <section id="v-guida" data-v="guida" hidden>
+      <div class="grid">
+        <div class="stack">
+          <div class="card">
+            <div class="card-head"><h2>Checklist della matricola</h2><span class="muted small num" id="check-count"></span></div>
+            <ul class="check" id="checklist"></ul>
+          </div>
+          <div class="card">
+            <h2>Come si studia all'università</h2>
+            <div class="methods" id="methods"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Glossario universitario</h2>
+          <input type="search" id="g-search" placeholder="Cerca: CFU, appello, ISEE…" aria-label="Cerca nel glossario">
+          <dl class="gloss" id="gloss"></dl>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer><span id="save-status">Salvato su questo browser</span><span>Le date e le regole variano da ateneo ad ateneo: controlla sempre il sito del tuo corso.</span></footer>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const key = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse = k => { const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d); };
+const addDays = (d,n) => new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+const today = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
+const diffDays = (a,b) => Math.round((parse(b) - parse(a)) / 86400000);
+const fmtH = h => (Math.round(h*2)/2).toLocaleString('it-IT') + ' h';
+const DAYNAMES = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+const LS = 'matricola-v1';
+
+/* ---------- Contenuti ---------- */
+const CHECK = [
+  ['email','Attiva l\'email istituzionale e le credenziali di ateneo'],
+  ['moodle','Entra su Moodle (o la piattaforma del corso) e iscriviti ai corsi del semestre'],
+  ['orario','Salva l\'orario delle lezioni e le aule'],
+  ['piano','Controlla il piano di studi e gli esami a scelta'],
+  ['appelli','Scopri dove e quando ci si iscrive agli appelli'],
+  ['tasse','Segna le scadenze di tasse e ISEE'],
+  ['ricevimento','Annota gli orari di ricevimento dei docenti'],
+  ['programmi','Scarica il programma d\'esame di ogni corso'],
+  ['biblioteca','Trova un\'aula studio o una biblioteca che ti piace'],
+  ['gruppo','Unisciti al gruppo degli studenti del tuo corso'],
+  ['tutor','Chiedi se esiste un servizio di tutorato per matricole'],
+];
+const GLOSS = [
+  ['CFU','Credito formativo universitario. 1 CFU corrisponde a 25 ore di impegno tra lezioni e studio individuale. Un anno a tempo pieno vale 60 CFU.'],
+  ['Appello','Una data in cui puoi sostenere un esame. Di solito ci si iscrive online entro una scadenza, qualche giorno prima.'],
+  ['Sessione d\'esame','Periodo senza lezioni dedicato agli esami. In genere: invernale (gennaio–febbraio), estiva (giugno–luglio), autunnale (settembre).'],
+  ['Voto in trentesimi','Gli esami si superano da 18 a 30; il massimo è 30 e lode. In molti corsi puoi rifiutare un voto e ripetere l\'esame.'],
+  ['Idoneità','Esame senza voto: risulta solo superato o non superato. Capita spesso per le lingue.'],
+  ['Libretto','Il registro dei tuoi esami e voti. Oggi è quasi sempre online, nel portale studenti.'],
+  ['Propedeuticità','Un esame che devi superare prima di poterne sostenere un altro.'],
+  ['Piano di studi','L\'elenco degli esami del tuo percorso, compresi quelli a scelta. Va spesso compilato o confermato entro una scadenza.'],
+  ['Prova intermedia','Detta anche esonero o parziale: una prova durante il corso che sostituisce una parte dell\'esame finale.'],
+  ['Ricevimento','L\'orario in cui il docente riceve gli studenti per domande e chiarimenti. Spesso va prenotato.'],
+  ['Frequenza obbligatoria','Alcuni corsi richiedono una percentuale minima di presenze per poter sostenere l\'esame.'],
+  ['Media ponderata','La media dei voti pesata per i CFU di ciascun esame. Conta per borse di studio e voto di laurea.'],
+  ['ISEE','Indicatore della situazione economica familiare: determina l\'importo delle tasse e l\'accesso alle borse di studio.'],
+  ['OFA','Obblighi formativi aggiuntivi: lacune assegnate se il test d\'ingresso non va bene, da recuperare di solito entro il primo anno.'],
+  ['Fuori corso','Chi non conclude gli studi entro la durata normale del corso di laurea.'],
+  ['Segreteria studenti','L\'ufficio per pratiche amministrative: iscrizioni, tasse, certificati, trasferimenti.'],
+];
+const METHODS = [
+  ['Ripassa entro 24 ore','Rileggi e sistema gli appunti il giorno stesso della lezione. Ti costa 20 minuti e ti risparmia ore in sessione.'],
+  ['Interrogati, non rileggere','Chiudi il libro e prova a spiegare l\'argomento ad alta voce. Rileggere dà l\'illusione di sapere.'],
+  ['Ripassi distanziati','Torna su un argomento dopo 1, 3, 7 e 14 giorni. È il modo più efficace per ricordare a lungo.'],
+  ['Allenati sui vecchi appelli','Per gli scritti, risolvi i testi degli appelli passati con il cronometro, come all\'esame vero.'],
+  ['Pomodoro','25 minuti di studio e 5 di pausa, telefono lontano. Dopo quattro cicli, una pausa lunga.'],
+  ['Vai a ricevimento','Portare domande precise al docente chiarisce i dubbi e ti fa capire cosa conta per l\'esame.'],
+];
+const COLORS = ['--e0','--e1','--e2','--e3','--e4','--e5'];
+
+/* ---------- Stato ---------- */
+function exampleState(){
+  const t = today(), k = n => key(addDays(t, n));
+  const log = [[-6,'an1',2],[-5,'an1',2.5],[-5,'eco',1],[-4,'inf',2],[-3,'an1',3],[-2,'eco',2],[-1,'an1',2]]
+    .map(([n,e,h]) => ({d:k(n), e, h}));
+  return { v:1, isExample:true, settings:{weeklyHours:28, days:[1,2,3,4,5,6]},
+    exams:[
+      {id:'an1', name:'Analisi Matematica I', cfu:9, date:k(73), diff:3, target:135},
+      {id:'eco', name:'Economia Aziendale', cfu:9, date:k(88), diff:2, target:110},
+      {id:'inf', name:'Fondamenti di Informatica', cfu:6, date:k(101), diff:2, target:80},
+    ], log, checklist:{email:true, moodle:true} };
+}
+function valid(s){ return s && s.v === 1 && Array.isArray(s.exams) && Array.isArray(s.log) && s.settings; }
+
+let S = exampleState();
+let docRef = null, writing = false, pendingWrite = false, saveTimer = null;
+try { const raw = localStorage.getItem(LS); if (raw) { const p = JSON.parse(raw); if (valid(p)) S = p; } } catch(e) {}
+
+function setStatus(t){ $('#save-status').textContent = t; }
+function save(){
+  try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e) {}
+  if (!docRef) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flush, 700);
+}
+async function flush(){
+  if (writing) { pendingWrite = true; return; }
+  writing = true;
+  try { await docRef.set({ json: JSON.stringify(S), updated: Date.now() }); setStatus('Salvato nel tuo account'); }
+  catch(e) { setStatus('Salvataggio online non riuscito: i dati restano su questo browser'); }
+  writing = false;
+  if (pendingWrite) { pendingWrite = false; flush(); }
+}
+function touch(){ S.isExample = false; save(); renderAll(); }
+
+async function connect(){
+  const c = window.claude;
+  if (!c || !c.use) return;
+  const timeout = new Promise(r => setTimeout(() => r([null,null]), 10000));
+  const [db, user] = await Promise.race([Promise.all([c.use('db'), c.use('user')]), timeout]).catch(() => [null,null]);
+  if (!db || !user) return;
+  try {
+    const id = await user.id();
+    if (!id) return;
+    const ref = db.doc(`data/users/${id}/stato`);
+    const snap = await ref.get();
+    docRef = ref;
+    if (snap.exists) {
+      const p = JSON.parse(snap.data().json || 'null');
+      if (valid(p)) { S = p; try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e) {} renderAll(); }
+    } else if (!S.isExample) { flush(); }
+    setStatus('Salvato nel tuo account');
+  } catch(e) { docRef = null; }
+}
+
+/* ---------- Pianificazione ---------- */
+function computePlan(){
+  const t = today(), tk = key(t);
+  const days = S.settings.days.length ? S.settings.days : [1,2,3,4,5];
+  const H = Math.max(0.5, (+S.settings.weeklyHours || 0) / days.length);
+  const exams = S.exams.filter(e => e.date && e.date > tk);
+  const maxDate = exams.reduce((m,e) => e.date > m ? e.date : m, tk);
+  const study = [];
+  for (let d = t; key(d) < maxDate && study.length < 400; d = addDays(d,1)) if (days.includes(d.getDay())) study.push(key(d));
+  const doneBefore = {}, doneAll = {}, week7 = {};
+  const weekAgo = key(addDays(t,-7));
+  S.log.forEach(l => {
+    doneAll[l.e] = (doneAll[l.e]||0) + l.h;
+    if (l.d < tk) doneBefore[l.e] = (doneBefore[l.e]||0) + l.h;
+    if (l.d >= weekAgo) week7[l.e] = (week7[l.e]||0) + l.h;
+  });
+  const rem = {}, last = {};
+  exams.forEach(e => { rem[e.id] = Math.max(0, target(e) - (doneBefore[e.id]||0)); last[e.id] = study.filter(k => k < e.date).length; });
+  const plan = {};
+  study.forEach((dk, i) => {
+    const act = exams.filter(e => i < last[e.id] && rem[e.id] > 0.01);
+    const p = {}; let sum = 0;
+    act.forEach(e => { p[e.id] = rem[e.id] / (last[e.id] - i); sum += p[e.id]; });
+    const scale = sum > H ? H / sum : 1;
+    const items = [];
+    act.forEach(e => {
+      const raw = p[e.id] * scale;
+      let h = Math.round(raw * 2) / 2;
+      if (h < 0.5) h = raw >= 0.2 ? 0.5 : 0;
+      h = Math.min(h, Math.ceil(rem[e.id] * 2) / 2);
+      if (h > 0) { items.push({ e:e.id, h, final: last[e.id] - i <= 3 }); rem[e.id] -= h; }
+    });
+    plan[dk] = items;
+  });
+  const short = exams.filter(e => rem[e.id] > 1).map(e => ({ e, h: rem[e.id] }));
+  return { plan, H, tk, doneAll, short, week7 };
+}
+const target = e => +e.target || (+e.cfu || 6) * 15;
+const exById = id => S.exams.find(e => e.id === id);
+const colorOf = id => `var(${COLORS[Math.max(0, S.exams.findIndex(e => e.id === id)) % COLORS.length]})`;
+
+/* ---------- Render: Piano ---------- */
+function renderPiano(){
+  const P = computePlan();
+  $('#example-banner').hidden = !S.isExample;
+
+  if (P.short.length) {
+    $('#short-banner').hidden = false;
+    $('#short-text').textContent = 'Con le ore che hai indicato non arrivi pronto a tutto: ' +
+      P.short.map(s => `mancano circa ${Math.round(s.h)} ore per ${s.e.name}`).join(', ') +
+      '. Aumenta le ore settimanali, aggiungi un giorno di studio o valuta l\'appello successivo.';
+  } else $('#short-banner').hidden = true;
+
+  // Oggi
+  const t = today();
+  $('#today-date').innerHTML = `<span class="mark">${esc(t.toLocaleDateString('it-IT', {weekday:'long', day:'numeric', month:'long'}))}</span>`;
+  const items = P.plan[P.tk] || [];
+  const list = $('#today-list'); list.innerHTML = '';
+  if (!S.exams.length) {
+    list.innerHTML = '<li class="muted">Nessun esame inserito. Vai su <a href="#esami">Esami</a> per aggiungerne uno.</li>';
+  } else if (!items.length) {
+    list.innerHTML = `<li class="muted">${S.settings.days.includes(t.getDay()) ? 'Niente in programma oggi: sei in pari.' : 'Oggi è un giorno di riposo. Ricaricati.'}</li>`;
+  }
+  items.forEach(it => {
+    const ex = exById(it.e); if (!ex) return;
+    const done = S.log.some(l => l.d === P.tk && l.e === it.e);
+    const li = document.createElement('li');
+    li.className = 'session' + (done ? ' done' : '');
+    const cid = 'chk-' + it.e;
+    li.innerHTML = `<input type="checkbox" id="${cid}" ${done ? 'checked' : ''}>
+      <span class="sw" style="background:${colorOf(it.e)}"></span>
+      <label for="${cid}" class="name">${esc(ex.name)}${it.final ? '<span class="tag">Ripasso finale</span>' : ''}</label>
+      <span class="num">${fmtH(it.h)}</span>`;
+    li.querySelector('input').addEventListener('change', ev => {
+      S.log = S.log.filter(l => !(l.d === P.tk && l.e === it.e));
+      if (ev.target.checked) S.log.push({ d:P.tk, e:it.e, h:it.h });
+      touch();
+    });
+    list.appendChild(li);
+  });
+  const tot = items.reduce((a,b) => a + b.h, 0);
+  $('#today-total').textContent = tot ? `${fmtH(tot)} in programma` : '';
+
+  // Settimana
+  const week = $('#week'); week.innerHTML = '';
+  let weekTot = 0;
+  const maxH = Math.max(P.H * 1.15, 1);
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(t, i), dk = key(d);
+    const its = P.plan[dk] || [];
+    const isStudy = S.settings.days.includes(d.getDay());
+    const sum = its.reduce((a,b) => a + b.h, 0); weekTot += sum;
+    const div = document.createElement('div');
+    div.className = 'day' + (i === 0 ? ' is-today' : '');
+    const segs = its.map(it => `<div class="seg" title="${esc(exById(it.e)?.name || '')}: ${fmtH(it.h)}" style="height:${(it.h / maxH * 114).toFixed(1)}px;background:${colorOf(it.e)}"></div>`).join('');
+    div.innerHTML = `<div class="bars">${segs || (!isStudy ? '<div class="rest">riposo</div>' : '')}</div>
+      <div class="lbl"><b>${DAYNAMES[d.getDay()]}</b><span class="num muted">${d.getDate()}</span><br><span class="num">${sum ? fmtH(sum) : '–'}</span></div>`;
+    week.appendChild(div);
+  }
+  $('#week-h').textContent = `${fmtH(weekTot)} pianificate`;
+  $('#legend').innerHTML = S.exams.map(e => `<span><i class="dot" style="background:${colorOf(e.id)}"></i>${esc(e.name)}</span>`).join('');
+
+  // Libretto
+  const el = $('#exam-list'); el.innerHTML = '';
+  const sorted = [...S.exams].sort((a,b) => (a.date||'9') < (b.date||'9') ? -1 : 1);
+  if (!sorted.length) el.innerHTML = '<p class="muted">Nessun esame. <a href="#esami">Aggiungine uno</a>.</p>';
+  sorted.forEach(e => {
+    const done = P.doneAll[e.id] || 0, tg = target(e), pct = Math.min(100, done / tg * 100);
+    const dd = e.date ? diffDays(P.tk, e.date) : null;
+    const when = dd === null ? 'data da definire' : dd < 0 ? 'appello passato' : dd === 0 ? 'oggi!' : dd === 1 ? 'domani' : `tra ${dd} giorni`;
+    const dateTxt = e.date ? parse(e.date).toLocaleDateString('it-IT', {day:'numeric', month:'short'}) : '';
+    const row = document.createElement('div'); row.className = 'exam-row';
+    row.innerHTML = `<div class="r1"><h3><i class="dot" style="background:${colorOf(e.id)}"></i>${esc(e.name)}</h3>
+        <span class="small"><strong>${when}</strong> <span class="muted">${esc(dateTxt)}</span></span></div>
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="Avanzamento ${esc(e.name)}"><i style="width:${pct.toFixed(1)}%;background:${colorOf(e.id)}"></i></div>
+      <div class="r1 small muted"><span class="num">${fmtH(done)} di ${fmtH(tg)}</span><span class="num">${e.cfu} CFU</span></div>`;
+    el.appendChild(row);
+  });
+  const cfu = S.exams.reduce((a,e) => a + (+e.cfu||0), 0);
+  $('#cfu-total').textContent = `${cfu} CFU nel semestre`;
+}
+
+/* ---------- Render: Esami ---------- */
+let confirmDel = null;
+function renderEsami(){
+  $('#weekly').value = S.settings.weeklyHours;
+  const n = S.settings.days.length || 1;
+  $('#perday').textContent = `Circa ${fmtH(S.settings.weeklyHours / n)} per giorno di studio.`;
+  const chips = $('#daychips'); chips.innerHTML = '';
+  [1,2,3,4,5,6,0].forEach(d => {
+    const l = document.createElement('label');
+    l.innerHTML = `<input type="checkbox" id="day-${d}" ${S.settings.days.includes(d) ? 'checked' : ''}>${DAYNAMES[d]}`;
+    l.querySelector('input').addEventListener('change', ev => {
+      S.settings.days = ev.target.checked ? [...new Set([...S.settings.days, d])] : S.settings.days.filter(x => x !== d);
+      touch();
+    });
+    chips.appendChild(l);
+  });
+  $('#clear-ex').hidden = !S.isExample;
+
+  const ed = $('#editor'); ed.innerHTML = '';
+  if (!S.exams.length) ed.innerHTML = '<p class="muted">Nessun esame. Aggiungi il primo con il pulsante qui sopra.</p>';
+  S.exams.forEach(e => {
+    const r = document.createElement('div'); r.className = 'ed-row';
+    r.innerHTML = `
+      <label class="f wide">Nome<input id="n-${e.id}" value="${esc(e.name)}"></label>
+      <label class="f">CFU<input id="c-${e.id}" type="number" min="1" max="30" value="${e.cfu}"></label>
+      <label class="f">Data appello<input id="d-${e.id}" type="date" value="${esc(e.date||'')}"></label>
+      <label class="f">Difficoltà<select id="x-${e.id}">
+        <option value="1"${e.diff==1?' selected':''}>Tranquillo</option>
+        <option value="2"${e.diff==2?' selected':''}>Impegnativo</option>
+        <option value="3"${e.diff==3?' selected':''}>Mi spaventa</option></select></label>
+      <label class="f">Ore stimate<input id="h-${e.id}" type="number" min="5" max="600" value="${target(e)}"></label>
+      <div class="del"></div>`;
+    const on = (sel, fn) => r.querySelector(sel).addEventListener('change', ev => { fn(ev.target.value); touch(); });
+    on(`#n-${e.id}`, v => e.name = v.trim() || 'Esame');
+    on(`#c-${e.id}`, v => { const old = target(e), oldAuto = old === (+e.cfu||6)*15; e.cfu = Math.max(1, +v||1); if (oldAuto) e.target = e.cfu*15; });
+    on(`#d-${e.id}`, v => e.date = v);
+    on(`#x-${e.id}`, v => { const d = +v; const base = e.cfu*15; e.diff = d; e.target = Math.round(base * (d===3 ? 1.15 : d===1 ? 0.85 : 1)); });
+    on(`#h-${e.id}`, v => e.target = Math.max(5, +v||5));
+    const del = r.querySelector('.del');
+    if (confirmDel === e.id) {
+      del.innerHTML = '<div class="confirm"><span>Eliminare?</span><button class="danger" data-a="yes">Elimina</button><button class="ghost" data-a="no">Annulla</button></div>';
+      del.querySelector('[data-a=yes]').onclick = () => { S.exams = S.exams.filter(x => x.id !== e.id); S.log = S.log.filter(l => l.e !== e.id); confirmDel = null; touch(); };
+      del.querySelector('[data-a=no]').onclick = () => { confirmDel = null; renderEsami(); };
+    } else {
+      del.innerHTML = `<button class="ghost danger" aria-label="Elimina ${esc(e.name)}">Elimina</button>`;
+      del.querySelector('button').onclick = () => { confirmDel = e.id; renderEsami(); };
+    }
+    ed.appendChild(r);
+  });
+}
+$('#weekly').addEventListener('change', ev => { S.settings.weeklyHours = Math.min(80, Math.max(1, +ev.target.value || 1)); touch(); });
+$('#add-ex').addEventListener('click', () => {
+  const id = 'e' + Date.now().toString(36);
+  S.exams.push({ id, name:'Nuovo esame', cfu:6, date:key(addDays(today(), 60)), diff:2, target:90 });
+  touch();
+  setTimeout(() => { const i = document.getElementById('n-' + id); if (i) { i.focus(); i.select(); } }, 0);
+});
+$('#clear-ex').addEventListener('click', () => { S.exams = []; S.log = []; touch(); });
+
+/* ---------- Render: Guida ---------- */
+function renderGuida(){
+  const cl = $('#checklist'); cl.innerHTML = '';
+  CHECK.forEach(([k, txt]) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<label><input type="checkbox" id="ck-${k}" ${S.checklist[k] ? 'checked' : ''}><span>${esc(txt)}</span></label>`;
+    li.querySelector('input').addEventListener('change', ev => { S.checklist[k] = ev.target.checked; save(); renderGuida(); });
+    cl.appendChild(li);
+  });
+  $('#check-count').textContent = `${CHECK.filter(([k]) => S.checklist[k]).length} di ${CHECK.length}`;
+}
+function renderGloss(){
+  const q = $('#g-search').value.trim().toLowerCase();
+  $('#gloss').innerHTML = GLOSS.filter(([t,d]) => !q || (t+' '+d).toLowerCase().includes(q))
+    .map(([t,d]) => `<div><dt>${esc(t)}</dt><dd>${esc(d)}</dd></div>`).join('') || '<p class="muted">Nessun termine trovato.</p>';
+}
+$('#g-search').addEventListener('input', renderGloss);
+$('#methods').innerHTML = METHODS.map(([t,d]) => `<div class="method"><h3>${esc(t)}</h3><p class="small muted">${esc(d)}</p></div>`).join('');
+
+/* ---------- AI (sample) ---------- */
+let samplePromise = null;
+function getSample(){
+  if (!samplePromise) samplePromise = (window.claude && window.claude.use) ? window.claude.use('sample').catch(() => null) : Promise.resolve(null);
+  return samplePromise;
+}
+function md(text){
+  const lines = esc(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').split('\n');
+  let html = '', inList = false;
+  lines.forEach(l => {
+    const m = l.match(/^\s*[-•*]\s+(.*)/);
+    if (m) { if (!inList) { html += '<ul>'; inList = true; } html += `<li>${m[1]}</li>`; }
+    else { if (inList) { html += '</ul>'; inList = false; } if (l.trim()) html += `<p>${l.replace(/^#+\s*/, '')}</p>`; }
+  });
+  return html + (inList ? '</ul>' : '');
+}
+function aiError(e){
+  if (e && e.code === 'not_granted') return 'Non hai dato il permesso di usare l\'AI in questa pagina.';
+  if (e && e.code === 'rate_limited') return 'Troppe richieste in poco tempo. Riprova tra qualche minuto.';
+  return 'La richiesta non è andata a buon fine. Riprova.';
+}
+
+$('#coach-btn').addEventListener('click', async () => {
+  const out = $('#coach-out'), btn = $('#coach-btn');
+  out.hidden = false; out.innerHTML = '<p class="muted">Sto leggendo i tuoi progressi…</p>';
+  const sample = await getSample();
+  if (!sample) { out.innerHTML = '<p class="err">Il coach AI non è disponibile in questa vista.</p>'; return; }
+  const P = computePlan();
+  const planned7 = Object.entries(P.plan).filter(([k]) => k < key(addDays(today(), 7))).reduce((a,[,its]) => a + its.reduce((x,y) => x + y.h, 0), 0);
+  const stats = S.exams.map(e => ({
+    esame:e.name, cfu:e.cfu, giorni_all_appello: e.date ? diffDays(P.tk, e.date) : null,
+    ore_fatte: P.doneAll[e.id] || 0, ore_stimate: target(e), ore_ultimi_7_giorni: P.week7[e.id] || 0,
+    difficolta: ['','tranquillo','impegnativo','fa paura'][e.diff] || '' }));
+  const prompt = `Sei un coach di studio per una matricola universitaria italiana al primo semestre.
+Dati dello studente (JSON): ${JSON.stringify({ ore_settimanali_disponibili: S.settings.weeklyHours, ore_pianificate_prossimi_7_giorni: planned7, esami: stats, ore_mancanti_previste: P.short.map(s => ({esame:s.e.name, ore:Math.round(s.h)})) })}
+Scrivi in italiano, dando del tu, un messaggio breve (massimo 140 parole): un giudizio sincero sulla situazione, poi 3 consigli concreti per questa settimana come elenco con "- ". Tono caldo ma diretto, niente frasi fatte. Non inventare dati che non ci sono.`;
+  btn.disabled = true;
+  try {
+    await sample(prompt, { cache:false, onText: ({text}) => { out.innerHTML = md(text); } }).then(r => { out.innerHTML = md(r.text); });
+  } catch(e) { out.innerHTML = `<p class="err">${esc(aiError(e))}</p>`; }
+  btn.disabled = false;
+});
+
+let ctrl = null;
+function renderSubjects(){
+  const sel = $('#t-subj'), cur = sel.value;
+  sel.innerHTML = S.exams.map(e => `<option>${esc(e.name)}</option>`).join('') + '<option>Altra materia</option>';
+  if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+}
+function tutorBusy(b){ $('#t-explain').disabled = b; $('#t-quiz').disabled = b; $('#t-stop').hidden = !b; }
+$('#t-stop').addEventListener('click', () => ctrl && ctrl.abort());
+
+$('#t-explain').addEventListener('click', async () => {
+  const out = $('#t-out'); const q = $('#t-q').value.trim();
+  if (!q) { $('#t-q').focus(); return; }
+  out.hidden = false; out.innerHTML = '<p class="muted">Sto preparando la spiegazione…</p>';
+  const sample = await getSample();
+  if (!sample) { $('#tutor-off').hidden = false; out.hidden = true; return; }
+  const lvl = { semplice:'in modo semplicissimo, con un\'analogia della vita quotidiana, come a un amico', normale:'in modo chiaro, con un esempio concreto', esame:'con il rigore che serve all\'esame: definizioni precise, eventuali formule scritte in testo semplice, e un esempio' }[$('#t-level').value];
+  ctrl = new AbortController(); tutorBusy(true);
+  try {
+    const r = await sample(`Sei un tutor universitario paziente che aiuta una matricola italiana.
+Materia: ${$('#t-subj').value}.
+Spiega ${lvl}. Massimo 280 parole, paragrafi brevi; puoi usare **grassetto** ed elenchi con "- ". Chiudi con una domanda per verificare se ho capito. Se la domanda non è chiara, chiedi di precisarla.
+Richiesta dello studente: """${q}"""`, { signal: ctrl.signal, onText: ({text}) => { out.innerHTML = md(text); } });
+    out.innerHTML = md(r.text) + (r.truncated ? '<p class="muted small">Risposta interrotta per lunghezza.</p>' : '');
+  } catch(e) {
+    if (e && e.text) out.innerHTML = md(e.text) + `<p class="muted small">${e.code === 'aborted' ? 'Interrotto.' : esc(aiError(e))}</p>`;
+    else out.innerHTML = `<p class="err">${esc(e && e.code === 'aborted' ? 'Interrotto.' : aiError(e))}</p>`;
+  }
+  tutorBusy(false);
+});
+
+$('#t-quiz').addEventListener('click', async () => {
+  const out = $('#t-out'); const q = $('#t-q').value.trim();
+  if (!q) { $('#t-q').focus(); return; }
+  out.hidden = false; out.innerHTML = '<p class="muted">Sto preparando 5 domande…</p>';
+  const sample = await getSample();
+  if (!sample) { $('#tutor-off').hidden = false; out.hidden = true; return; }
+  ctrl = new AbortController(); tutorBusy(true);
+  try {
+    const data = await sample.json(`Crea un quiz di 5 domande a risposta multipla per una matricola universitaria italiana.
+Materia: ${$('#t-subj').value}. Argomento: """${q}""". Livello: ${$('#t-level').value}.
+Ogni domanda ha 4 opzioni e una sola corretta; le opzioni sbagliate devono essere plausibili. Testi in italiano.
+Rispondi SOLO con JSON in questo formato: {"domande":[{"testo":"...","opzioni":["...","...","...","..."],"corretta":0,"spiegazione":"una o due frasi"}]}`, { signal: ctrl.signal });
+    renderQuiz(out, (data && data.domande) || []);
+  } catch(e) { out.innerHTML = `<p class="err">${esc(e && e.code === 'aborted' ? 'Interrotto.' : aiError(e))}</p>`; }
+  tutorBusy(false);
+});
+function renderQuiz(out, qs){
+  qs = qs.filter(x => x && Array.isArray(x.opzioni) && x.opzioni.length >= 2);
+  if (!qs.length) { out.innerHTML = '<p class="err">Non sono riuscito a creare il quiz. Prova a riformulare l\'argomento.</p>'; return; }
+  let score = 0, answered = 0;
+  out.innerHTML = '<div class="quiz"></div><p class="small" id="score"></p>';
+  const box = out.querySelector('.quiz');
+  qs.forEach((x, i) => {
+    const d = document.createElement('div'); d.className = 'q';
+    d.innerHTML = `<h3>${i+1}. ${esc(x.testo)}</h3><div class="opts">${x.opzioni.map((o,j) => `<button data-j="${j}">${esc(o)}</button>`).join('')}</div><p class="expl" hidden>${esc(x.spiegazione||'')}</p>`;
+    d.querySelectorAll('.opts button').forEach(b => b.addEventListener('click', () => {
+      const j = +b.dataset.j, right = +x.corretta;
+      d.querySelectorAll('.opts button').forEach(o => { o.disabled = true; if (+o.dataset.j === right) o.classList.add('right'); });
+      if (j !== right) b.classList.add('wrong'); else score++;
+      answered++; d.querySelector('.expl').hidden = false;
+      if (answered === qs.length) out.querySelector('#score').innerHTML = `<strong>Risultato: ${score} su ${qs.length}.</strong> ${score === qs.length ? 'Perfetto!' : score >= qs.length/2 ? 'Bene, ripassa le domande sbagliate.' : 'Rivedi l\'argomento e riprova tra qualche giorno.'}`;
+    }));
+    box.appendChild(d);
+  });
+}
+
+/* ---------- Navigazione ---------- */
+const VIEWS = ['piano','esami','tutor','guida'];
+function route(){
+  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'piano';
+  document.querySelectorAll('[data-v]').forEach(s => s.hidden = s.dataset.v !== v);
+  document.querySelectorAll('nav.tabs a').forEach(a => { if (a.dataset.view === v) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+}
+window.addEventListener('hashchange', route);
+
+function renderAll(){ renderPiano(); renderEsami(); renderGuida(); renderGloss(); renderSubjects(); }
+route(); renderAll(); connect();
+})();
+</script>
+
+</body>
+</html>
