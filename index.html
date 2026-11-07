@@ -247,6 +247,11 @@ footer{margin-top:28px;color:var(--muted);font-size:.85rem;display:flex;gap:8px 
         <h2>Tutor AI</h2>
         <p class="muted small">Chiedi una spiegazione o fatti interrogare con un quiz. Le risposte sono generate dall'AI: verificale sempre su dispense e libri del corso.</p>
         <div id="tutor-off" class="banner warn" hidden><p>Il tutor AI non è disponibile in questa vista. Aprila su claude.ai per usarlo.</p></div>
+        <div id="code-box" class="row" hidden>
+          <label class="f" style="flex:1 1 220px">Codice di accesso all'AI<input id="ai-code" type="password" autocomplete="off" placeholder="Te lo dà chi gestisce il sito"></label>
+          <button id="code-save">Salva codice</button>
+          <span class="muted small" id="code-msg"></span>
+        </div>
         <div class="row">
           <label class="f" style="flex:1 1 200px">Materia<select id="t-subj"></select></label>
           <label class="f" style="flex:1 1 200px">Livello
@@ -726,9 +731,40 @@ $('#methods').innerHTML = METHODS.map(([t,d]) => `<div class="method"><h3>${esc(
 
 /* ---------- AI (sample) ---------- */
 let samplePromise = null;
+// Su claude.ai l'AI passa da Claude; sul sito (es. Netlify) passa dalla funzione server che custodisce la chiave API.
+const onClaude = !!(window.claude && window.claude.use);
+const useServer = !onClaude && /^https?:$/.test(location.protocol);
+const CODE_KEY = 'matricola-code';
+const getCode = () => { try { return localStorage.getItem(CODE_KEY) || ''; } catch(e) { return ''; } };
+async function serverCall(prompt, opts = {}){
+  let r;
+  try {
+    r = await fetch('/.netlify/functions/ai', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ prompt, code: getCode() }), signal: opts.signal });
+  } catch(e) { throw { code: e && e.name === 'AbortError' ? 'aborted' : 'network' }; }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw { code: d.code || (r.status === 404 ? 'not_configured' : 'server'), message: d.error };
+  if (opts.onText) opts.onText({ text: d.text, delta: d.text });
+  return { text: d.text || '', truncated: !!d.truncated };
+}
+const serverSample = (prompt, opts) => serverCall(prompt, opts);
+serverSample.json = async (prompt, opts) => {
+  const { text } = await serverCall(prompt, opts);
+  const m = text.match(/\{[\s\S]*\}/);
+  try { return JSON.parse(m ? m[0] : text); } catch(e) { throw { code:'invalid_json', text }; }
+};
 function getSample(){
-  if (!samplePromise) samplePromise = (window.claude && window.claude.use) ? window.claude.use('sample').catch(() => null) : Promise.resolve(null);
+  if (!samplePromise) samplePromise = onClaude ? window.claude.use('sample').catch(() => null)
+    : Promise.resolve(useServer ? serverSample : null);
   return samplePromise;
+}
+if (useServer) {
+  $('#code-box').hidden = false;
+  $('#ai-code').value = getCode();
+  $('#code-save').addEventListener('click', () => {
+    try { localStorage.setItem(CODE_KEY, $('#ai-code').value.trim()); $('#code-msg').textContent = 'Codice salvato su questo browser.'; }
+    catch(e) { $('#code-msg').textContent = 'Non riesco a salvare il codice su questo browser.'; }
+  });
 }
 function md(text){
   const lines = esc(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').split('\n');
@@ -743,6 +779,11 @@ function md(text){
 function aiError(e){
   if (e && e.code === 'not_granted') return 'Non hai dato il permesso di usare l\'AI in questa pagina.';
   if (e && e.code === 'rate_limited') return 'Troppe richieste in poco tempo. Riprova tra qualche minuto.';
+  if (e && e.code === 'bad_code') return 'Codice di accesso mancante o sbagliato: inseriscilo nella scheda Tutor AI.';
+  if (e && e.code === 'not_configured') return 'L\'AI non è ancora configurata su questo sito.';
+  if (e && e.code === 'too_long') return 'La richiesta è troppo lunga: accorciala e riprova.';
+  if (e && e.code === 'network') return 'Connessione non riuscita. Controlla internet e riprova.';
+  if (e && e.code === 'invalid_json') return 'La risposta dell\'AI non era nel formato giusto. Riprova.';
   return 'La richiesta non è andata a buon fine. Riprova.';
 }
 

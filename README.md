@@ -15,18 +15,24 @@ Web app che aiuta le matricole ad abituarsi allo studio universitario: un planne
 
 È un unico file HTML, senza installazione: apri `index.html` nel browser, oppure pubblicalo con GitHub Pages (Settings → Pages → Deploy from a branch → `main`, cartella `/`).
 
-## Limiti attuali
+## AI sul sito con la tua chiave API
 
-| Funzione | Su claude.ai | Fuori da claude.ai (browser, GitHub Pages) |
+Su claude.ai tutor e coach usano Claude. Sul sito (Netlify) passano dalla funzione `netlify/functions/ai.mjs`, che custodisce la chiave API sul server: la chiave non finisce mai nel browser né nel repository. Funziona con qualsiasi API compatibile con OpenAI.
+
+Su Netlify, in **Site configuration → Environment variables**, imposta:
+
+| Variabile | Obbligatoria | Cosa contiene |
 |---|---|---|
-| Planner, libretto, guida | Sì | Sì |
-| Salvataggio | Nell'account Claude | Solo nel browser di chi la usa |
-| Tutor AI e coach | Sì | No: serve un server con una chiave API |
+| `AI_API_KEY` | Sì | La tua chiave API |
+| `AI_MODEL` | Sì | Il nome del modello (per esempio uno economico del tuo fornitore) |
+| `AI_BASE_URL` | No | Indirizzo dell'API; predefinito `https://api.openai.com/v1` |
+| `ACCESS_CODE` | Consigliata | Codice che gli utenti inseriscono nella scheda Tutor AI per usare l'AI |
 
-Una chiave API (OpenAI o altro) **non va mai messa** in questo file o in un sito statico: chiunque potrebbe leggerla. Per avere l'AI fuori da claude.ai serve un piccolo server che custodisca la chiave.
+Il sito deve essere collegato a questo repository (Site configuration → Build & deploy → Link repository) perché la funzione venga pubblicata. Imposta anche un limite di spesa mensile dal tuo fornitore: il sito è pubblico.
+
+Dopo aver cambiato le variabili, rilancia la pubblicazione da **Deploys → Trigger deploy**.
 
 ## Prossimi passi
 
-- Server con chiave API per il tutor AI fuori da claude.ai
 - Caricamento delle dispense, per far rispondere il tutor sul materiale del corso
 - Collegamento a Moodle e timer Pomodoro
