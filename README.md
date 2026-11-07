@@ -5,6 +5,7 @@ Web app che aiuta le matricole ad abituarsi allo studio universitario: un planne
 ## Funzioni
 
 - **Piano**: sessioni di studio di oggi da spuntare, grafico dei prossimi 7 giorni e "libretto" con le ore studiate per ogni esame. Il piano si ricalcola da solo se resti indietro e avvisa se le ore disponibili non bastano.
+- **Settimana**: vista calendario (FullCalendar) con impegni, sessioni di studio a orario e appelli. Le sessioni si trascinano per cambiare orario nella stessa giornata; il nuovo orario vale anche per Google Calendar.
 - **Esami**: ore settimanali, giorni di studio e, per ogni esame, CFU, data dell'appello, difficoltà e ore stimate (all'inizio 15 ore di studio per CFU).
 - **Tutor AI**: spiegazioni a tre livelli (semplice, normale, da esame) e quiz interattivi da 5 domande.
 - **Coach settimanale**: legge i progressi e dà consigli concreti per la settimana.

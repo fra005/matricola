@@ -14,6 +14,7 @@
   --paper:#F5F6FA; --surface:#FFFFFF; --ink:#18213D; --muted:#596181; --line:#DCE0EB;
   --accent:#2B47C9; --accent-fg:#FFFFFF; --accent-soft:#E7EBFB;
   --mark:#F3E45A; --mark-ink:#18213D;
+  --busy:#DADFEA;
   --warn-bg:#FFF2D8; --warn:#7A4E00; --ok:#1C7A4B; --ok-bg:#E2F4EA; --bad:#B3261E; --bad-bg:#FBE6E4;
   --e0:#2B47C9; --e1:#D4572B; --e2:#1C8A6D; --e3:#8E47C2; --e4:#B38A00; --e5:#CC336A;
   --f-display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
@@ -25,6 +26,7 @@
   --paper:#0F1320; --surface:#171C2C; --ink:#E7EAF4; --muted:#9AA2BF; --line:#2A3150;
   --accent:#93A6FF; --accent-fg:#0F1320; --accent-soft:#232B4A;
   --mark:#5E5412; --mark-ink:#FFF7C2;
+  --busy:#2E3550;
   --warn-bg:#3A2A08; --warn:#F2C46B; --ok:#62D49D; --ok-bg:#12301F; --bad:#FF8A80; --bad-bg:#3A1514;
   --e0:#93A6FF; --e1:#FF8C5E; --e2:#4FD1A8; --e3:#C792EA; --e4:#E8C547; --e5:#FF7AA8;
   color-scheme:dark }}
@@ -32,6 +34,7 @@
   --paper:#0F1320; --surface:#171C2C; --ink:#E7EAF4; --muted:#9AA2BF; --line:#2A3150;
   --accent:#93A6FF; --accent-fg:#0F1320; --accent-soft:#232B4A;
   --mark:#5E5412; --mark-ink:#FFF7C2;
+  --busy:#2E3550;
   --warn-bg:#3A2A08; --warn:#F2C46B; --ok:#62D49D; --ok-bg:#12301F; --bad:#FF8A80; --bad-bg:#3A1514;
   --e0:#93A6FF; --e1:#FF8C5E; --e2:#4FD1A8; --e3:#C792EA; --e4:#E8C547; --e5:#FF7AA8;
   color-scheme:dark }
@@ -140,6 +143,24 @@ dl.gloss dt{font-weight:700}
 dl.gloss dd{margin:2px 0 0;color:var(--muted)}
 .methods{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
 .method{border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:6px}
+/* Settimana (FullCalendar) */
+#fc{--fc-border-color:var(--line);--fc-page-bg-color:var(--surface);--fc-neutral-bg-color:var(--paper);--fc-today-bg-color:var(--accent-soft);
+  --fc-now-indicator-color:var(--bad);--fc-list-event-hover-bg-color:var(--paper);
+  --fc-button-bg-color:var(--surface);--fc-button-border-color:var(--line);--fc-button-text-color:var(--ink);
+  --fc-button-hover-bg-color:var(--paper);--fc-button-hover-border-color:var(--line);
+  --fc-button-active-bg-color:var(--accent);--fc-button-active-border-color:var(--accent);
+  font-size:.88rem;min-width:0}
+#fc .fc-button{font-weight:700;text-transform:none;box-shadow:none}
+#fc .fc-button-primary:not(:disabled).fc-button-active{color:var(--accent-fg)}
+#fc .fc-toolbar{flex-wrap:wrap;gap:8px}
+#fc .fc-toolbar-title{font-family:var(--f-display);font-size:1.15rem;text-transform:capitalize}
+#fc .fc-col-header-cell-cushion,#fc .fc-timegrid-slot-label-cushion,#fc .fc-list-day-text,#fc .fc-list-day-side-text{color:var(--ink);text-decoration:none;text-transform:capitalize}
+#fc .ev-busy{background:var(--busy);border-color:var(--busy);opacity:.9}
+#fc .ev-busy .fc-event-main{color:var(--ink)}
+#fc .ev-study{cursor:grab;font-weight:700}
+#fc .ev-done{opacity:.5;text-decoration:line-through}
+#fc .fc-list-event-title{color:var(--ink)}
+#week-info{min-width:0;flex:1 1 260px}
 /* Catalogo e pagine d'esame */
 .catalog{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
 .cat-year{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -190,6 +211,7 @@ footer{margin-top:28px;color:var(--muted);font-size:.85rem;display:flex;gap:8px 
     </div>
     <nav class="tabs" aria-label="Sezioni">
       <a href="#piano" data-view="piano">Piano</a>
+      <a href="#settimana" data-view="settimana">Settimana</a>
       <a href="#esami" data-view="esami">Esami</a>
       <a href="#tutor" data-view="tutor">Tutor AI</a>
       <a href="#guida" data-view="guida">Guida</a>
@@ -236,6 +258,20 @@ footer{margin-top:28px;color:var(--muted);font-size:.85rem;display:flex;gap:8px 
             <div><button class="primary" id="coach-btn">Come sto andando?</button></div>
             <div class="out" id="coach-out" hidden></div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTIMANA -->
+    <section id="v-settimana" data-v="settimana" hidden>
+      <div class="card">
+        <div class="card-head"><h2>La tua settimana</h2>
+          <span class="legend"><span><i class="dot" style="background:var(--busy)"></i>Impegni</span><span><i class="dot" style="background:var(--accent)"></i>Studio</span></span></div>
+        <p class="small muted" id="week-note"></p>
+        <div id="fc"></div>
+        <div class="row" style="justify-content:space-between">
+          <div id="week-info"></div>
+          <button class="ghost" id="pins-reset" hidden>Ripristina gli orari automatici</button>
         </div>
       </div>
     </section>
@@ -398,6 +434,8 @@ footer{margin-top:28px;color:var(--muted);font-size:.85rem;display:flex;gap:8px 
   <footer><span id="save-status">Salvato su questo browser</span><span>Le date e le regole variano da ateneo ad ateneo: controlla sempre il sito del tuo corso.</span></footer>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/locales/it.global.min.js"></script>
 <script>
 (() => {
 const $ = s => document.querySelector(s);
@@ -1384,7 +1422,8 @@ const calHas = dk => !!(S.cal && S.cal.connected && S.cal.busy && (dk in S.cal.b
 // Intervalli liberi (in minuti dalla mezzanotte) nella fascia di studio, tolti gli impegni e un margine attorno
 function freeSlots(dk){
   const W = calWin();
-  const busy = (S.cal.busy[dk] || []).map(([a, b]) => [a - W.buffer, b + W.buffer]).sort((x, y) => x[0] - y[0]);
+  const raw = (S.cal && S.cal.connected && S.cal.busy && S.cal.busy[dk]) || [];
+  const busy = raw.map(([a, b]) => [a - W.buffer, b + W.buffer]).sort((x, y) => x[0] - y[0]);
   const slots = []; let cur = W.from;
   for (const [a, b] of busy) {
     if (b <= cur) continue;
@@ -1397,9 +1436,26 @@ function freeSlots(dk){
 }
 // Mette le ore del giorno nei buchi liberi: blocchi lunghi al massimo W.block, con W.pause di pausa tra un blocco e l'altro
 function place(dk, items){
-  const W = calWin(), slots = freeSlots(dk).map(s => s.slice()), out = [];
+  const W = calWin(), out = [], pins = (S.pins && S.pins[dk]) || {}, rest = {};
+  // 1. Blocchi spostati a mano dallo studente: restano dove li ha messi
   for (const it of items) {
     let need = Math.round(it.h * 60);
+    for (const st of (pins[it.e] || [])) {
+      if (need < 30) break;
+      const len = Math.min(W.block, need);
+      out.push({ e: it.e, a: st, b: st + len, final: it.final, pinned: true }); need -= len;
+    }
+    rest[it.e] = need;
+  }
+  // 2. Il resto negli spazi liberi, evitando i blocchi già fissati
+  let slots = freeSlots(dk).map(s => s.slice());
+  out.forEach(p => {
+    const lo = p.a - W.pause, hi = p.b + W.pause, next = [];
+    slots.forEach(([a, b]) => { if (hi <= a || lo >= b) next.push([a, b]); else { if (lo - a >= 30) next.push([a, lo]); if (b - hi >= 30) next.push([hi, b]); } });
+    slots = next;
+  });
+  for (const it of items) {
+    let need = rest[it.e];
     for (const s of slots) {
       while (need >= 30 && s[1] - s[0] >= 30) {
         const len = Math.min(W.block, need, s[1] - s[0]);
@@ -1553,8 +1609,93 @@ $('#gcal-sync').addEventListener('click', syncCalendar);
 $('#gcal-off').addEventListener('click', disconnectCalendar);
 if (useServer && GOOGLE_CLIENT_ID) loadGis().catch(() => {});
 
+
+/* ---------- Settimana (FullCalendar) ---------- */
+let fc = null, fcSel = null;
+// Blocchi di studio di un giorno, con orari (rispetta impegni e orari spostati a mano)
+function dayBlocks(dk, P){ return place(dk, (P.plan[dk] || [])); }
+function weekEvents(info, success){
+  const P = computePlan(), t0 = today(), tk = key(t0), last = key(addDays(t0, 60)), out = [];
+  for (let d = new Date(info.start); d < info.end; d = addDays(d, 1)) {
+    const dk = key(d), at = m => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, m);
+    if (S.cal && S.cal.connected && S.cal.busy && S.cal.busy[dk])
+      S.cal.busy[dk].forEach(([a, b], i) => out.push({ id: `busy-${dk}-${i}`, title: 'Impegno', start: at(a), end: at(b), editable: false, classNames: ['ev-busy'] }));
+    if (dk < tk || dk > last) continue;
+    const perExam = {};
+    dayBlocks(dk, P).forEach(s => {
+      const ex = exById(s.e); if (!ex) return;
+      const idx = perExam[s.e] = (perExam[s.e] ?? -1) + 1;
+      const done = S.log.some(l => l.d === dk && l.e === s.e);
+      out.push({ id: `st-${dk}-${s.e}-${idx}`, title: ex.name + (s.final ? ' · ripasso finale' : ''), start: at(s.a), end: at(s.b),
+        backgroundColor: colorOf(s.e), borderColor: colorOf(s.e), textColor: 'var(--accent-fg)',
+        classNames: ['ev-study'].concat(done ? ['ev-done'] : []), extendedProps: { dk, e: s.e, idx } });
+    });
+  }
+  S.exams.filter(e => e.date >= key(info.start) && e.date < key(info.end)).forEach(e =>
+    out.push({ id: 'app-' + e.id, title: 'Appello: ' + e.name, start: e.date, allDay: true, editable: false, classNames: ['ev-exam'],
+      backgroundColor: colorOf(e.id), borderColor: colorOf(e.id), textColor: 'var(--accent-fg)' }));
+  success(out);
+}
+function onDrop(info){
+  const { dk, e, idx } = info.event.extendedProps, d = info.event.start;
+  const newStart = d.getHours() * 60 + d.getMinutes();
+  // Fisso solo il blocco spostato; gli altri blocchi dell'esame si risistemano da soli negli spazi liberi
+  const moved = dayBlocks(dk, computePlan()).filter(s => s.e === e)[idx];
+  S.pins = S.pins || {}; S.pins[dk] = S.pins[dk] || {};
+  const arr = (S.pins[dk][e] || []).slice(), j = moved && moved.pinned ? arr.indexOf(moved.a) : -1;
+  if (j >= 0) arr[j] = newStart; else arr.push(newStart);
+  S.pins[dk][e] = arr.sort((a, b) => a - b);
+  save(); fcSel = null; renderWeekInfo(); fc.refetchEvents(); renderPiano();
+}
+function renderWeekNote(){
+  const n = $('#week-note'); if (!n) return;
+  n.textContent = S.cal && S.cal.connected
+    ? 'Le sessioni di studio sono negli spazi liberi tra i tuoi impegni di Google Calendar.'
+    : 'Le sessioni sono nella tua fascia di studio (Esami → Il tuo tempo). Collega Google Calendar nel Piano per evitare i tuoi impegni.';
+}
+function renderWeekInfo(){
+  renderWeekNote();
+  const box = $('#week-info');
+  const pinned = S.pins && Object.keys(S.pins).some(dk => dk >= key(today()) && Object.keys(S.pins[dk]).length);
+  $('#pins-reset').hidden = !pinned;
+  if (!fcSel) { box.innerHTML = '<p class="small muted">Tocca una sessione per i dettagli. Trascinala per cambiarle orario nella stessa giornata.</p>'; return; }
+  const { dk, e } = fcSel.extendedProps, ex = exById(e); if (!ex) { fcSel = null; return renderWeekInfo(); }
+  const isToday = dk === key(today()), done = S.log.some(l => l.d === dk && l.e === e);
+  const tf = x => x.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+  box.innerHTML = `<p><strong>${esc(ex.name)}</strong></p>
+    <p class="small muted">${esc(parse(dk).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }))}, ${tf(fcSel.start)}–${tf(fcSel.end)}</p>
+    ${isToday ? `<button id="wk-done">${done ? 'Segna come da fare' : 'Segna come fatta oggi'}</button>` : ''}`;
+  if (isToday) $('#wk-done').onclick = () => {
+    const P = computePlan(), it = (P.plan[dk] || []).find(x => x.e === e);
+    S.log = S.log.filter(l => !(l.d === dk && l.e === e));
+    if (!done && it) S.log.push({ d: dk, e, h: it.h });
+    touch();
+  };
+}
+function initWeek(){
+  if (fc) { fc.updateSize(); fc.refetchEvents(); return; }
+  const el = $('#fc');
+  if (!window.FullCalendar) { el.innerHTML = '<p class="err">Non riesco a caricare il calendario. Controlla la connessione e ricarica la pagina.</p>'; return; }
+  const W = calWin(), narrow = window.innerWidth < 700;
+  fc = new FullCalendar.Calendar(el, {
+    locale: 'it', firstDay: 1, nowIndicator: true, height: 'auto',
+    initialView: narrow ? 'timeGridDay' : 'timeGridWeek',
+    headerToolbar: { left: 'prev,next today', center: 'title', right: narrow ? 'timeGridDay,listWeek' : 'timeGridWeek,timeGridDay,listWeek' },
+    slotMinTime: fmtMin(Math.max(0, Math.min(W.from, 8 * 60) - 60)) + ':00',
+    slotMaxTime: fmtMin(Math.min(24 * 60, Math.max(W.to, 20 * 60) + 60)) + ':00',
+    slotDuration: '00:30:00', scrollTime: fmtMin(W.from) + ':00', allDayText: 'Appelli',
+    editable: true, eventDurationEditable: false, eventStartEditable: true, snapDuration: '00:15:00',
+    eventAllow: (drop, ev) => ev.extendedProps && ev.extendedProps.dk && key(drop.start) === ev.extendedProps.dk,
+    eventOverlap: false,
+    events: weekEvents, eventDrop: onDrop,
+    eventClick: info => { if (!info.event.extendedProps.dk) return; fcSel = info.event; renderWeekInfo(); },
+  });
+  fc.render(); renderWeekInfo();
+}
+$('#pins-reset').addEventListener('click', () => { S.pins = {}; save(); fcSel = null; renderWeekInfo(); if (fc) fc.refetchEvents(); renderPiano(); });
+
 /* ---------- Navigazione ---------- */
-const VIEWS = ['piano','esami','tutor','guida','polito'];
+const VIEWS = ['piano','settimana','esami','tutor','guida','polito'];
 function route(){
   const h = location.hash.slice(1);
   let v = VIEWS.includes(h) ? h : 'piano';
@@ -1562,11 +1703,12 @@ function route(){
   else curCorso = null;
   const tab = v === 'corso' ? 'polito' : v;
   document.querySelectorAll('section[data-v]').forEach(s => s.hidden = s.dataset.v !== v);
+  if (v === 'settimana') setTimeout(initWeek, 0);
   document.querySelectorAll('nav.tabs a').forEach(a => { if (a.dataset.view === tab) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
 }
 window.addEventListener('hashchange', route);
 
-function renderAll(){ renderGcal(); renderPiano(); renderEsami(); renderGuida(); renderGloss(); renderSubjects(); renderPolito(); renderCatalog(); refreshCorso(); }
+function renderAll(){ if (fc) { fc.refetchEvents(); renderWeekInfo(); } renderGcal(); renderPiano(); renderEsami(); renderGuida(); renderGloss(); renderSubjects(); renderPolito(); renderCatalog(); refreshCorso(); }
 route(); renderAll(); connect();
 })();
 </script>
