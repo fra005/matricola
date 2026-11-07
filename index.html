@@ -139,6 +139,25 @@ dl.gloss dt{font-weight:700}
 dl.gloss dd{margin:2px 0 0;color:var(--muted)}
 .methods{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
 .method{border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:6px}
+/* Catalogo e pagine d'esame */
+.catalog{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
+.cat-year{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cat-year h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+.cat-row{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n m" "b p";gap:4px 10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;color:var(--ink);text-decoration:none}
+.cat-row:hover{border-color:var(--accent)}
+.cat-row:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.cat-name{grid-area:n;font-weight:700;min-width:0}
+.cat-row > .small.muted{grid-area:m}
+.cat-row .bar{grid-area:b;height:6px}
+.cat-row > .small:last-child{grid-area:p}
+.back{color:var(--accent);font-weight:700;text-decoration:none;align-self:flex-start}
+.topic{display:flex;flex-direction:column;gap:6px;padding-block:12px;border-top:1px solid var(--line)}
+.topic .r1{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.levels{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:.8rem;padding:4px 10px;border-radius:999px;font-weight:700}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+#corso-head .r1{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+#cq-result{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:14px}
 /* PoliTo */
 .tbl-wrap{overflow-x:auto}
 table.plan{border-collapse:collapse;width:100%;font-size:.92rem}
@@ -298,6 +317,11 @@ footer{margin-top:28px;color:var(--muted);font-size:.85rem;display:flex;gap:8px 
     <section id="v-polito" data-v="polito" hidden>
       <div class="stack">
         <div class="card">
+          <div class="card-head"><h2>Esami di Ingegneria Informatica</h2><span class="muted small">Argomenti dalle schede ufficiali</span></div>
+          <p class="small muted">Apri un esame per vedere gli argomenti, segnare i progressi e fare il test che stima quante ore dedicare a ogni argomento.</p>
+          <div class="catalog" id="catalog"></div>
+        </div>
+        <div class="card">
           <div class="card-head"><h2>Politecnico di Torino · Ingegneria Informatica</h2><span class="pill">Primo anno</span></div>
           <p>Il primo anno è comune a quasi tutti i corsi di ingegneria del PoliTo: matematica, fisica, chimica, informatica e inglese. Puoi caricare questi esami nel planner con un clic e poi correggere le date con quelle del tuo calendario.</p>
           <div class="tbl-wrap">
@@ -306,7 +330,7 @@ footer{margin-top:28px;color:var(--muted);font-size:.85rem;display:flex;gap:8px 
               <tbody id="polito-table"></tbody>
             </table>
           </div>
-          <p class="verify">CFU e periodi vengono da fonti pubbliche e possono cambiare da un anno all'altro. Il riferimento ufficiale è il tuo piano carriera sul Portale della Didattica.</p>
+          <p class="verify">Dati dal piano di studi ufficiale 2026/27 su polito.it. Il riferimento per te resta il tuo piano carriera sul Portale della Didattica.</p>
           <div class="row" id="preset-row"><button class="primary" id="preset-btn">Carica questi esami nel planner</button></div>
         </div>
 
@@ -327,6 +351,28 @@ footer{margin-top:28px;color:var(--muted);font-size:.85rem;display:flex;gap:8px 
           <h2>Schede di studio per materia</h2>
           <p class="muted small">Argomenti tipici, errori frequenti e consigli. I programmi esatti sono nella scheda di ogni insegnamento sul Portale della Didattica.</p>
           <div class="schede" id="schede"></div>
+        </div>
+      </div>
+    </section>
+    <!-- CORSO -->
+    <section id="v-corso" data-v="corso" hidden>
+      <div class="stack">
+        <a href="#polito" class="back small">← Tutti gli esami</a>
+        <div class="card" id="corso-head"></div>
+        <div class="grid">
+          <div class="card" id="corso-topics"></div>
+          <div class="stack">
+            <div class="card">
+              <h2>Test di partenza</h2>
+              <p class="small muted">Scopri cosa sai già. Il risultato stima le ore da dedicare a ogni argomento.</p>
+              <div class="row">
+                <button class="primary" id="cq-ai">Quiz AI: 2 domande per argomento</button>
+                <button id="cq-self">Autovalutazione rapida</button>
+              </div>
+              <div class="out" id="cq-out" hidden></div>
+              <div id="cq-result" hidden></div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -402,6 +448,7 @@ const POLITO_EXAMS = [
   {id:'pt-chi', name:'Chimica', cfu:8, per:1, sess:'Gennaio–febbraio', date:'2027-02-08', diff:2},
   {id:'pt-alg', name:'Algebra lineare e geometria', cfu:10, per:2, sess:'Giugno–luglio', date:'2027-06-21', diff:2, start:'2027-03-01'},
   {id:'pt-fis', name:'Fisica I', cfu:10, per:2, sess:'Giugno–luglio', date:'2027-06-28', diff:3, start:'2027-03-01'},
+  {id:'pt-tdp', name:'Tecniche di programmazione', cfu:6, per:2, sess:'Giugno–luglio', date:'2027-07-05', diff:2, start:'2027-03-01'},
 ];
 const POLITO_GUIDE = [
   ['Portale della Didattica','Il tuo punto di partenza: orario, materiale e videolezioni dei corsi, iscrizione agli appelli, libretto. Controllalo ogni settimana.'],
@@ -413,13 +460,13 @@ const POLITO_GUIDE = [
 ];
 const SCHEDE = [
   {name:'Analisi matematica I', meta:'10 CFU · 1° periodo',
-   arg:['Numeri reali e complessi','Successioni, limiti e forme indeterminate','Continuità, derivate e studio di funzione','Formula di Taylor e confronti asintotici (o-piccolo)','Integrali definiti e impropri','Serie numeriche','Equazioni differenziali lineari'],
+   arg:['Numeri reali e complessi','Successioni, limiti e forme indeterminate','Continuità, derivate e studio di funzione','Formula di Taylor e confronti asintotici (o-piccolo)','Integrali definiti e impropri','Equazioni differenziali del primo e del secondo ordine'],
    err:['Dimenticare il dominio prima di studiare una funzione','Usare de l\'Hôpital senza verificarne le ipotesi','Sbagliare segni e ordini negli sviluppi di Taylor'],
-   tip:['Taylor serve ovunque (limiti, serie, integrali impropri): imparalo bene','Ogni settimana fai gli esercizi della settimana, non accumulare','Allenati sui temi d\'esame con il tempo dell\'esame']},
-  {name:'Informatica', meta:'8 CFU · 1° periodo',
-   arg:['Rappresentazione dell\'informazione: binario, complemento a due','Variabili, tipi, condizioni e cicli','Vettori, matrici e stringhe','Funzioni e passaggio dei parametri','Lettura e scrittura di file','Algoritmi di base: ricerca e ordinamento'],
-   err:['Uscire dai limiti di un vettore (v[5] in un vettore da 5)','Dimenticare il terminatore \'\\0\' nelle stringhe','Scrivere tutto il programma e provarlo solo alla fine'],
-   tip:['Programma tutti i giorni, anche 30 minuti','Allenati nelle stesse condizioni dell\'esame (al computer o su carta: leggi la scheda del corso)','Prima scrivi l\'algoritmo a parole, poi il codice']},
+   tip:['Taylor serve ovunque (limiti, studio di funzione, integrali impropri): imparalo bene','Ogni settimana fai gli esercizi della settimana, non accumulare','Allenati sui temi d\'esame con il tempo dell\'esame']},
+  {name:'Informatica', meta:'8 CFU · 1° periodo · Python',
+   arg:['Rappresentazione dell\'informazione e architettura dei calcolatori','Problem solving: diagrammi di flusso e pseudocodice','Python: tipi, variabili, operatori, input e output','Python: condizioni, cicli e funzioni','Python: liste, insiemi e dizionari','Python: file di testo ed eccezioni'],
+   err:['Confondere / e // (divisione e divisione intera)','Modificare una lista mentre la si scorre con un ciclo','Dimenticare di convertire l\'input (input() restituisce sempre una stringa)'],
+   tip:['Programma tutti i giorni, anche 30 minuti','Prima scrivi l\'algoritmo a parole o con un diagramma di flusso, poi il codice','Allenati nelle stesse condizioni dell\'esame: leggi le regole nella scheda del corso']},
   {name:'Chimica', meta:'8 CFU · 1° periodo',
    arg:['Struttura dell\'atomo e tavola periodica','Legami chimici e geometria molecolare','Stechiometria e bilanciamento','Stato gassoso e soluzioni','Termodinamica ed equilibrio chimico','Acidi, basi e pH','Elettrochimica'],
    err:['Confondere grammi e moli','Non bilanciare la reazione prima dei calcoli','Perdere le unità di misura nei passaggi'],
@@ -432,21 +479,32 @@ const SCHEDE = [
    arg:['Cinematica del punto','Dinamica e principi di Newton','Lavoro ed energia','Quantità di moto e urti','Sistemi di punti e corpo rigido','Gravitazione e oscillazioni','Termodinamica'],
    err:['Diagramma delle forze incompleto','Sbagliare i segni rispetto al sistema di riferimento','Dimenticare le unità di misura o usarne di diverse'],
    tip:['Disegna sempre lo schema prima di scrivere formule','Ricava le formule invece di memorizzarle','Controlla dimensioni e ordine di grandezza del risultato']},
+  {name:'Tecniche di programmazione', meta:'6 CFU · 2° periodo · C',
+   arg:['Architettura, memoria, compilazione e algebra di Boole','Il C come secondo linguaggio: tipi, I/O, controllo, funzioni','Vettori, matrici, stringhe e struct','Puntatori e allocazione dinamica','Problem solving: complessità e ordinamenti iterativi'],
+   err:['Uscire dai limiti di un vettore (v[5] in un vettore da 5 elementi)','Dimenticare il terminatore \'\\0\' nelle stringhe','Usare memoria allocata con malloc senza controllarla o senza liberarla'],
+   tip:['Il passaggio da Python a C è il punto critico: scrivi tanti piccoli programmi nelle prime settimane','Disegna la memoria (variabili, puntatori, vettori) quando un programma non funziona','Allenati sui temi d\'esame al computer, con il tempo dell\'esame']},
 ];
 const QUIZ = {
   'Analisi matematica I':[
     {testo:'Quanto vale il limite di sin(x)/x per x che tende a 0?', opzioni:['0','1','∞','Non esiste'], corretta:1, spiegazione:'È un limite notevole: sin(x)/x → 1 per x → 0.'},
     {testo:'Qual è la derivata di e^(2x)?', opzioni:['e^(2x)','2e^(2x)','e^(2x)/2','2x·e^(2x−1)'], corretta:1, spiegazione:'Regola della catena: la derivata di e^(g(x)) è g\'(x)·e^(g(x)), qui g\'(x) = 2.'},
-    {testo:'La serie Σ 1/n, per n da 1 a infinito:', opzioni:['converge a 1','converge a 2','diverge','oscilla'], corretta:2, spiegazione:'È la serie armonica: diverge, anche se i suoi termini tendono a 0.'},
+    {testo:'Quanto vale l\'integrale improprio di 1/x² tra 1 e +∞?', opzioni:['Diverge','1','1/2','2'], corretta:1, spiegazione:'Una primitiva è −1/x: il limite in +∞ è 0, in 1 vale −1, quindi l\'integrale vale 0 − (−1) = 1.'},
     {testo:'Lo sviluppo di Taylor di e^x in 0 fino al secondo ordine è:', opzioni:['1 + x','1 + x + x²','1 + x + x²/2','x + x²/2'], corretta:2, spiegazione:'e^x = 1 + x + x²/2 + o(x²), perché tutte le derivate di e^x in 0 valgono 1.'},
     {testo:'Quanto vale l\'integrale di x tra 0 e 1?', opzioni:['1','1/2','2','0'], corretta:1, spiegazione:'Una primitiva è x²/2, che vale 1/2 in 1 e 0 in 0.'},
   ],
   'Informatica':[
+    {testo:'In Python, cosa stampa print(7 // 2)?', opzioni:['3.5','3','4','3.0'], corretta:1, spiegazione:'// è la divisione intera: tra due interi dà 3.'},
+    {testo:'Di che tipo è [1, 2, 3] in Python?', opzioni:['tuple','list','set','dict'], corretta:1, spiegazione:'Le parentesi quadre creano una lista (list).'},
+    {testo:'Come si aggiunge un elemento x in fondo a una lista l?', opzioni:['l.add(x)','l.append(x)','l.push(x)','l.insert(x)'], corretta:1, spiegazione:'append aggiunge in fondo; add esiste per gli insiemi, non per le liste.'},
+    {testo:'Con d = {"a": 1}, cosa restituisce d.get("b", 0)?', opzioni:['Errore KeyError','None','0','1'], corretta:2, spiegazione:'get restituisce il valore predefinito (qui 0) se la chiave non esiste, senza errore.'},
+    {testo:'Come si scrive 13 in binario?', opzioni:['1011','1101','1110','1001'], corretta:1, spiegazione:'13 = 8 + 4 + 1, quindi 1101.'},
+  ],
+  'Tecniche di programmazione':[
     {testo:'In C, qual è l\'indice del primo elemento di un vettore?', opzioni:['0','1','−1','Dipende dal compilatore'], corretta:0, spiegazione:'In C gli indici partono da 0.'},
     {testo:'Con la dichiarazione int v[5]; qual è l\'ultimo elemento valido?', opzioni:['v[5]','v[4]','v[6]','v[0]'], corretta:1, spiegazione:'Gli elementi validi vanno da v[0] a v[4]: v[5] è fuori dal vettore.'},
     {testo:'Quale carattere termina una stringa in C?', opzioni:['\'\\n\'','\'\\0\'','\' \'','\'.\''], corretta:1, spiegazione:'Le stringhe in C terminano con il carattere nullo \'\\0\'.'},
-    {testo:'Come si scrive 13 in binario?', opzioni:['1011','1101','1110','1001'], corretta:1, spiegazione:'13 = 8 + 4 + 1, quindi 1101.'},
     {testo:'Cosa stampa: int a = 7, b = 2; printf("%d", a / b);', opzioni:['3.5','3','4','Errore'], corretta:1, spiegazione:'La divisione tra interi tronca la parte decimale: 7 / 2 = 3.'},
+    {testo:'Dopo int x = 5; int *p = &x; *p = 8; quanto vale x?', opzioni:['5','8','L\'indirizzo di x','13'], corretta:1, spiegazione:'p punta a x, quindi *p = 8 scrive 8 dentro x.'},
   ],
   'Chimica':[
     {testo:'Qual è il valore approssimato del numero di Avogadro?', opzioni:['6,022 × 10²³','3,0 × 10⁸','9,81','1,6 × 10⁻¹⁹'], corretta:0, spiegazione:'Una mole contiene circa 6,022 × 10²³ particelle.'},
@@ -750,8 +808,10 @@ async function serverCall(prompt, opts = {}){
 const serverSample = (prompt, opts) => serverCall(prompt, opts);
 serverSample.json = async (prompt, opts) => {
   const { text } = await serverCall(prompt, opts);
-  const m = text.match(/\{[\s\S]*\}/);
-  try { return JSON.parse(m ? m[0] : text); } catch(e) { throw { code:'invalid_json', text }; }
+  const m = text.match(/\{[\s\S]*\}/), raw = m ? m[0] : text;
+  try { return JSON.parse(raw); } catch(e) {}
+  // L'AI a volte scrive simboli come \sigma: raddoppia i backslash non validi in JSON e riprova
+  try { return JSON.parse(raw.replace(/\\(?!["\\/bfnrtu])/g, '\\\\')); } catch(e) { throw { code:'invalid_json', text }; }
 };
 function getSample(){
   if (!samplePromise) samplePromise = onClaude ? window.claude.use('sample').catch(() => null)
@@ -874,12 +934,190 @@ function renderQuiz(out, qs){
   });
 }
 
+/* ---------- Corsi di Ingegneria Informatica PoliTo (schede insegnamento A.A. 2026/27) ----------
+   h = ore (o CFU × 10) indicate nella scheda; est = peso stimato perché la scheda non lo indica. */
+const CORSI = [
+  {code:'16ACFYE', name:'Analisi matematica I', cfu:10, anno:1, per:1, topics:[
+    {t:'Insiemi numerici e funzioni', h:15, d:'Insiemi e simboli logici, numeri reali e completezza, funzioni iniettive e suriettive, composte e inverse, funzioni elementari'},
+    {t:'Limiti e continuità', h:24, d:'Limiti di funzioni e successioni, teoremi sui limiti, forme indeterminate, simboli di Landau, infiniti e infinitesimi, asintoti, limiti notevoli, teoremi sulle funzioni continue'},
+    {t:'Derivate e formula di Taylor', h:23, d:'Regole di derivazione, teoremi di Fermat, Rolle e Lagrange, de L\'Hôpital, formula di Taylor e sviluppi di Maclaurin, convessità, studio di funzione'},
+    {t:'Integrali', h:21, d:'Primitive, primitive di funzioni razionali, integrale definito, teorema fondamentale del calcolo, integrali impropri e criteri di convergenza'},
+    {t:'Numeri complessi ed equazioni differenziali', h:17, d:'Forma algebrica, trigonometrica ed esponenziale, radici, formule di Eulero; problema di Cauchy, equazioni del primo ordine lineari e a variabili separabili, equazioni lineari del secondo ordine a coefficienti costanti'},
+  ]},
+  {code:'15AHMYE', name:'Chimica', cfu:8, anno:1, per:1, topics:[
+    {t:'Atomo e tavola periodica', h:9, est:1, d:'Modelli atomici, numeri quantici, orbitali, configurazione elettronica, raggio atomico, energia di ionizzazione, affinità elettronica'},
+    {t:'Legame chimico e interazioni', h:10, est:1, d:'Legame ionico, covalente e metallico, geometria molecolare, ibridazione, risonanza, orbitali molecolari, van der Waals, legame a idrogeno'},
+    {t:'Nomenclatura e stechiometria', h:12, est:1, d:'Mole e numero di Avogadro, reazioni acido-base, numero di ossidazione, bilanciamento redox, reagente limitante, combustione'},
+    {t:'Stati della materia', h:10, est:1, d:'Gas ideali e reali, tensione di vapore, soluzioni e concentrazioni, proprietà colligative, solidi cristallini, diagrammi di stato'},
+    {t:'Acidi, basi e pH', h:8, est:1, d:'Definizioni di Arrhenius, Brønsted e Lewis, prodotto ionico dell\'acqua, pH e pOH, idrolisi dei sali'},
+    {t:'Cinetica ed equilibrio chimico', h:8, est:1, d:'Velocità e ordine di reazione, equazione di Arrhenius, catalisi, legge di azione di massa, principio di Le Chatelier'},
+    {t:'Termodinamica chimica', h:8, est:1, d:'Principi della termodinamica, entalpia e legge di Hess, entropia, energia libera, spontaneità'},
+    {t:'Elettrochimica', h:8, est:1, d:'Potenziali di elettrodo, equazione di Nernst, pile, elettrolisi e leggi di Faraday'},
+    {t:'Chimica organica', h:5, est:1, d:'Nomenclatura dei composti organici, gruppi funzionali e reazioni principali, isomeria strutturale'},
+  ]},
+  {code:'14BHDYE', name:'Informatica', cfu:8, anno:1, per:1, topics:[
+    {t:'Rappresentazione dell\'informazione e architetture', h:8, d:'Rappresentazione dei dati numerici e non numerici, architettura dei calcolatori e del software'},
+    {t:'Problem solving e algoritmi', h:12, d:'Diagrammi di flusso e pseudocodice per risolvere problemi concreti'},
+    {t:'Python: tipi, variabili, operatori e I/O', h:10, est:1, d:'Tipi primitivi, variabili e costanti, stringhe e metodi, input e output, operatori aritmetici e booleani'},
+    {t:'Python: controllo di flusso e funzioni', h:10, est:1, d:'Costrutti condizionali e iterativi, funzioni e passaggio di parametri'},
+    {t:'Python: liste, insiemi e dizionari', h:12, est:1, d:'Liste, insiemi, dizionari e strutture complesse (dizionari di insiemi e di liste)'},
+    {t:'Python: file ed eccezioni', h:8, est:1, d:'Lettura e scrittura di file di testo, gestione delle eccezioni'},
+  ]},
+  {code:'01RKCYE', name:'Algebra lineare e geometria', cfu:10, anno:1, per:2, topics:[
+    {t:'Vettori, rette e piani', h:12, est:1, d:'Prodotto scalare, vettoriale e misto, rette e piani nello spazio, proiezioni ortogonali, distanze punto-retta, punto-piano, retta-retta'},
+    {t:'Matrici, sistemi lineari e determinanti', h:14, est:1, d:'Operazioni tra matrici, riduzione per righe, risoluzione di sistemi, equazioni matriciali, matrice inversa, determinanti'},
+    {t:'Spazi vettoriali, basi e dimensione', h:14, est:1, d:'Sottospazi, dipendenza lineare, metodo degli scarti, basi e dimensione, spazio dei polinomi, formula di Grassmann'},
+    {t:'Applicazioni lineari', h:12, est:1, d:'Immagine e nucleo, applicazioni iniettive e suriettive, isomorfismi, matrice associata, endomorfismi'},
+    {t:'Autovalori e diagonalizzazione', h:12, est:1, d:'Autovalori, autovettori e autospazi, polinomio caratteristico, diagonalizzazione di un endomorfismo'},
+    {t:'Ortogonalità e forme quadratiche', h:10, est:1, d:'Basi ortonormali, matrici ortogonali, Gram-Schmidt, diagonalizzazione di matrici simmetriche, forme quadratiche'},
+    {t:'Coniche e quadriche', h:8, est:1, d:'Coniche, sfere, quadriche non degeneri in forma canonica e loro riconoscimento'},
+    {t:'Calcolo numerico', h:18, est:1, d:'Aritmetica di macchina, condizionamento e stabilità, fattorizzazioni LU, Cholesky e QR, metodo delle potenze, decomposizione ai valori singolari'},
+  ]},
+  {code:'17AXOYE', name:'Fisica I', cfu:10, anno:1, per:2, topics:[
+    {t:'Misura e cinematica', h:14, est:1, d:'Grandezze fisiche e incertezze, calcolo vettoriale, moti in una e più dimensioni, coordinate polari e intrinseche, moti relativi'},
+    {t:'Dinamica del punto', h:16, est:1, d:'Leggi di Newton, forze in natura, attrito statico, dinamico e viscoso, forze vincolari, sistemi non inerziali'},
+    {t:'Lavoro, energia e oscillazioni', h:12, est:1, d:'Teorema dell\'energia cinetica, forze conservative ed energia potenziale, conservazione dell\'energia, oscillatore armonico'},
+    {t:'Momento angolare e gravitazione', h:12, est:1, d:'Quantità di moto e impulso, momento della forza e momento angolare, leggi di Keplero, gravitazione universale, campo e potenziale gravitazionale'},
+    {t:'Sistemi di particelle e urti', h:12, est:1, d:'Centro di massa, equazioni cardinali, conservazione della quantità di moto e del momento angolare, teoremi di Koenig, urti elastici e anelastici'},
+    {t:'Corpo rigido', h:12, est:1, d:'Rotazione attorno a un asse fisso, momento d\'inerzia, teorema di Huygens-Steiner, rotolamento, equilibrio'},
+    {t:'Fluidi', h:6, est:1, d:'Pressione, leggi di Stevino, Pascal e Archimede, teorema di Bernoulli'},
+    {t:'Termodinamica: primo principio', h:8, est:1, d:'Temperatura e calore, trasformazioni termodinamiche, primo principio, gas perfetti, relazione di Mayer'},
+    {t:'Termodinamica: secondo principio', h:8, est:1, d:'Enunciati di Kelvin e Clausius, macchine termiche e frigorifere, ciclo di Carnot, entropia'},
+  ]},
+  {code:'01FYZYE', name:'Tecniche di programmazione', cfu:6, anno:1, per:2, topics:[
+    {t:'Architettura e logica', h:10, d:'Memoria centrale, puntatori e indirizzi, compilazione, link ed esecuzione, algebra di Boole'},
+    {t:'Il C come secondo linguaggio', h:20, d:'Tipi e I/O su terminale e file, costrutti di controllo, funzioni e passaggio dei parametri, vettori, matrici, stringhe, struct'},
+    {t:'Puntatori e allocazione dinamica', h:10, d:'Sintassi dei puntatori, dualità puntatore/vettore, aritmetica dei puntatori, vettori e matrici dinamiche'},
+    {t:'Problem solving elementare', h:20, d:'Complessità computazionale, ordinamenti iterativi, problemi su numeri, matrici e testi, codifica, verifica e selezione'},
+  ]},
+  {code:'03AAXYE', name:'Algoritmi e strutture dati', cfu:8, anno:2, per:1, topics:[
+    {t:'Ripasso del linguaggio C', h:3, d:'Ripasso dei costrutti del C'},
+    {t:'Strutture dati statiche e dinamiche', h:12, d:'Allocazione statica, su stack e dinamica, strutture linkate, scelta della struttura dati'},
+    {t:'Modularità', h:8, d:'Modello interfaccia-implementazione-client, programmi su più file, make e gdb'},
+    {t:'Ricorsione', h:9, d:'Funzioni ricorsive, backtracking, mergesort, quicksort, heapsort, equazioni alle ricorrenze'},
+    {t:'ADT e collezioni', h:8, d:'Liste, stack, code FIFO, code a priorità, heap, vettori di liste, multiliste'},
+    {t:'Paradigmi algoritmici', h:10, d:'Divide et impera, programmazione dinamica, greedy'},
+    {t:'Problem solving', h:10, d:'Problemi di ricerca e ottimizzazione, esplorazione dello spazio delle soluzioni con calcolo combinatorio e ricorsione'},
+    {t:'Tabelle di simboli', h:7, d:'Alberi binari di ricerca, tabelle di hash'},
+    {t:'Grafi', h:13, d:'Rappresentazione, visite in profondità e ampiezza, cammini minimi, alberi ricoprenti minimi'},
+  ]},
+  {code:'26ACIYE', name:'Analisi matematica II', cfu:10, anno:2, per:1, topics:[
+    {t:'Trasformata di Laplace', h:10, d:'Definizione, proprietà e uso della trasformata di Laplace'},
+    {t:'Calcolo differenziale in più variabili', h:20, d:'Limiti e continuità, derivate parziali e direzionali, Jacobiana, gradiente, Hessiana, Taylor, massimi e minimi liberi'},
+    {t:'Calcolo integrale in più variabili', h:30, d:'Integrali doppi e tripli, lunghezza di curve e aree, integrali curvilinei e di superficie, circuitazione e flusso, campi conservativi, teoremi di Green, Gauss e Stokes'},
+    {t:'Funzioni di variabile complessa', h:20, est:1, d:'Derivabilità e condizioni di Cauchy-Riemann, integrali complessi, formula integrale di Cauchy, serie di Laurent, teorema dei residui'},
+    {t:'Serie', h:20, est:1, d:'Criteri di convergenza delle serie numeriche, serie di potenze reali e complesse, serie di Taylor e di Fourier'},
+  ]},
+  {code:'01URKYE', name:'Elettromagnetismo e Teoria dei circuiti', cfu:12, anno:2, per:1, topics:[
+    {t:'Circuiti: concetti fondamentali', h:20, d:'Tensione, corrente e potenza, leggi di Kirchhoff, teorema di Tellegen, serie e parallelo, partitori, analisi nodale'},
+    {t:'Circuiti resistivi', h:15, d:'Generatori dipendenti, amplificatore operazionale ideale, Millman, sovrapposizione degli effetti, Thevenin e Norton'},
+    {t:'Circuiti dinamici', h:15, d:'Induttori e condensatori, circuiti RC e RL del primo ordine, circuiti del secondo ordine, equazioni di stato'},
+    {t:'Regime sinusoidale', h:20, d:'Fasori, potenza in regime sinusoidale, massimo trasferimento di potenza, impedenza, funzioni di trasferimento, diagrammi di Bode'},
+    {t:'Campi elettrici stazionari', h:10, d:'Coulomb, campo e potenziale elettrico, dipolo, legge di Gauss, condensatori, legge di Ohm, effetto Joule'},
+    {t:'Campi magnetici stazionari', h:15, d:'Forza di Lorentz, forze su correnti, dipolo magnetico, Biot-Savart, legge di Ampère, solenoide, Maxwell per campi stazionari'},
+    {t:'Campi variabili nel tempo', h:15, d:'Induzione elettromagnetica, legge di Faraday, autoinduzione e mutua induzione, legge di Ampère-Maxwell, equazioni di Maxwell'},
+    {t:'Onde elettromagnetiche', h:10, d:'Equazione delle onde, onde piane, vettore di Poynting, pressione di radiazione, polarizzazione, spettro'},
+  ]},
+  {code:'14AFQYE', name:'Basi di dati', cfu:8, anno:2, per:2, topics:[
+    {t:'DBMS e modello relazionale', h:4, d:'Caratteristiche di un sistema di gestione di basi di dati e del modello relazionale'},
+    {t:'Algebra relazionale', h:4, d:'Operatori principali e definizione delle interrogazioni'},
+    {t:'SQL: definizione e interrogazioni', h:10, d:'Istruzioni per definire le basi di dati ed elaborare i dati'},
+    {t:'Progettazione concettuale e logica', h:8, d:'Modello Entità-Relazione, progettazione concettuale e logica relazionale'},
+    {t:'SQL: viste, permessi e transazioni', h:4, d:'Gestione delle viste, controllo dell\'accesso, transazioni'},
+    {t:'SQL nelle applicazioni', h:7, d:'Architetture client-server, SQL in un linguaggio di programmazione, stored procedure, applicazioni web con accesso a una base di dati'},
+    {t:'Basi di dati attive e trigger', h:10.5, d:'Basi di dati attive e definizione dei trigger in SQL'},
+  ]},
+  {code:'12AGAYE', name:'Calcolatori elettronici', cfu:8, anno:2, per:2, topics:[
+    {t:'Circuiti logici', h:6, d:'Concetti base sui circuiti logici'},
+    {t:'Architettura del processore', h:10, d:'Architettura e funzionamento di un processore'},
+    {t:'Programmazione Assembler', h:15, d:'Programmazione in linguaggio Assembler'},
+    {t:'Sistema a processore', h:7, d:'Architettura e funzionamento di un sistema a processore'},
+    {t:'Il sistema di memoria', h:12, d:'Organizzazione e funzionamento della memoria'},
+    {t:'Periferiche e sistemi embedded', h:9, d:'Tecniche di gestione delle periferiche, esempio di programmazione di un sistema embedded'},
+    {t:'Bus di comunicazione', h:3, d:'Struttura e funzionamento dei bus'},
+    {t:'Processori RISC e superscalari', h:3, d:'Cenni ai processori RISC e superscalari'},
+  ]},
+  {code:'09BQXYE', name:'Metodi matematici per l\'ingegneria', cfu:10, anno:2, per:2, topics:[
+    {t:'Statistica descrittiva', h:5, d:'Rappresentazioni numeriche e grafiche, indici di tendenza centrale e di variabilità, percentili, correlazione'},
+    {t:'Probabilità elementare', h:15, d:'Calcolo combinatorio, definizioni di probabilità, probabilità condizionata, indipendenza'},
+    {t:'Variabili casuali', h:15, d:'Variabili discrete e continue, distribuzioni, valore atteso e varianza, esempi notevoli'},
+    {t:'Distribuzioni congiunte', h:15, d:'Distribuzioni congiunte, marginali e condizionate, indipendenza e correlazione, distribuzioni multidimensionali'},
+    {t:'Leggi limite', h:5, d:'Convergenza in probabilità e in legge, legge dei grandi numeri, teorema limite centrale'},
+    {t:'Campionamento e stimatori', h:10, d:'Distribuzioni campionarie, stimatori e proprietà, massima verosimiglianza, numeri pseudo-casuali'},
+    {t:'Intervalli di confidenza e test', h:10, d:'Intervalli di confidenza per medie e proporzioni, cenni ai test di ipotesi'},
+    {t:'Regressione lineare', h:5, d:'Regressione lineare multipla e minimi quadrati'},
+    {t:'Teoria delle distribuzioni', h:8, d:'Operazioni fondamentali, delta di Dirac, valore principale, treno di impulsi, convoluzione'},
+    {t:'Trasformate di Fourier e Laplace', h:12, d:'Definizioni, proprietà, antitrasformate, formule di inversione, trasformate notevoli'},
+  ]},
+  {code:'01GYAYE', name:'Progettazione elettronica digitale', cfu:8, anno:2, per:2, topics:[
+    {t:'Porte e circuiti logici', h:10, d:'Logica booleana, porte combinatorie, flip-flop, latch, registri, contatori e FSM'},
+    {t:'Circuiti di base e macchine a stati', h:15, d:'Minimizzazione e sintesi di reti combinatorie, sintesi di FSM, ASM chart, unità di controllo e data path'},
+    {t:'Transistor MOS e porte CMOS', h:10, d:'Funzionamento dei MOS, tecnologia CMOS, porte logiche CMOS, prestazioni, temporizzazioni e clock'},
+    {t:'Memorie', h:10, d:'DRAM, SRAM, CAM, memorie non volatili (ROM, EEPROM, Flash)'},
+    {t:'Verilog', h:15, d:'Descrizione e simulazione di circuiti combinatori e sequenziali, ROM e SRAM in Verilog, testbench'},
+    {t:'Progettazione VLSI', h:10, d:'Fasi di progettazione, sintesi RTL, place & route, EDA, full custom, standard cell, FPGA, aspetti di sistema'},
+    {t:'Progetto e test di sistemi digitali', h:10, d:'Conversione A/D e D/A, dalle specifiche di sistema ai componenti, test'},
+  ]},
+  {code:'05CJCYE', name:'Sistemi operativi', cfu:6, anno:3, per:1, topics:[
+    {t:'Architettura di un sistema operativo', h:3, d:'Classificazione, struttura, risorse gestite, organizzazione del kernel'},
+    {t:'Linux: comandi di base', h:6, d:'Comandi utente e di gestione del sistema'},
+    {t:'Linux: shell e script', h:5.5, d:'Shell e linguaggi di script'},
+    {t:'File system', h:3, d:'File, allocazione, architettura di un file system'},
+    {t:'Processi', h:11, d:'fork, wait, exec, system, segnali, comunicazione tra processi con pipe'},
+    {t:'Thread', h:6, d:'Thread e processi a confronto, libreria Pthread, problemi paralleli'},
+    {t:'Sincronizzazione', h:7.5, d:'Soluzioni software e hardware, semafori, produttore-consumatore, lettori-scrittori, filosofi'},
+    {t:'Scheduling e stallo', h:3, d:'Scheduling dei processi e problema del deadlock'},
+  ]},
+  {code:'09CBIYE', name:'Programmazione a oggetti', cfu:8, anno:3, per:1, topics:[
+    {t:'Basi di Java', h:15, d:'Programmazione a oggetti, classi, attributi, metodi, costruttori, package e visibilità, stringhe, wrapper, array'},
+    {t:'Ereditarietà e interfacce', h:20, d:'Ereditarietà, classi astratte, interfacce, interfacce funzionali e lambda, eccezioni, tipi generici'},
+    {t:'Collezioni e JUnit', h:17.5, est:1, d:'Framework JUnit, collezioni: set, liste, mappe'},
+    {t:'Stream, I/O, date e ORM', h:17.5, est:1, d:'Stream API, gestione dell\'input/output, date, Object-Relational Mapping'},
+    {t:'Ingegneria del software', h:10, d:'Ciclo di vita del software, UML, gestione delle versioni, testing'},
+  ]},
+  {code:'15CDUYE', name:'Reti di calcolatori', cfu:8, anno:3, per:1, topics:[
+    {t:'Concetti generali sulle reti', h:16, d:'Classificazione e topologie, commutazione di pacchetto e di circuito, multiplazione, client-server e peer-to-peer, architetture a strati, qualità del servizio'},
+    {t:'Livello fisico', h:8, d:'Canali trasmissivi e codifica, reti di accesso con e senza fili, reti di trasporto'},
+    {t:'Livello data-link e LAN', h:16, d:'Recupero d\'errore e controllo di flusso, protocolli punto-punto, reti locali e loro interconnessione'},
+    {t:'Livello rete: IP', h:12, d:'IPv4, ICMP, indirizzamento IP, DHCP, ARP, NAT, multicast'},
+    {t:'Livello trasporto: TCP e UDP', h:7, d:'Protocolli TCP e UDP'},
+    {t:'Livello applicativo', h:10, d:'SMTP, POP, IMAP, HTTP, DNS, P2P, comunicazioni multimediali, VoIP, SIP'},
+    {t:'Strumenti di analisi di rete', h:2, d:'Strumenti per l\'analisi del traffico di rete'},
+  ]},
+  {code:'02MOOYE', name:'Teoria ed elaborazione dei segnali', cfu:8, anno:3, per:1, topics:[
+    {t:'Classificazione dei segnali', h:7.5, d:'Tipi di segnali, energia e potenza'},
+    {t:'Serie e trasformata di Fourier', h:7.5, d:'Serie di Fourier e trasformata di Fourier'},
+    {t:'Sistemi LTI e filtri', h:12, d:'Risposta all\'impulso, funzione di trasferimento, convoluzione, filtri'},
+    {t:'Spettri e autocorrelazione', h:6, d:'Spettro di energia, autocorrelazione, segnali periodici e spettro di potenza'},
+    {t:'Campionamento', h:6, d:'Teorema del campionamento'},
+    {t:'Segnali a tempo discreto', h:7, d:'Operazioni di base, energia e potenza'},
+    {t:'DTFT, DFT e FFT', h:9, d:'Trasformata di Fourier a tempo discreto, convoluzione circolare, DFT e FFT'},
+    {t:'Trasformata zeta', h:6, d:'Definizione e proprietà della trasformata Z'},
+    {t:'Sistemi LTI a tempo discreto', h:9, d:'Analisi nel tempo, in frequenza e con la trasformata Z, filtri FIR e IIR'},
+    {t:'Processi stocastici', h:10, d:'Processi casuali e loro caratterizzazione'},
+  ]},
+  {code:'18AKSYE', name:'Controlli automatici', cfu:10, anno:3, per:2, topics:[
+    {t:'Modellistica dei sistemi dinamici', h:15, d:'Modelli di sistemi elettrici, meccanici, elettromeccanici e termici, variabili di stato e funzione di trasferimento'},
+    {t:'Evoluzione e stabilità', h:15, d:'Risposta dei sistemi lineari, analisi modale, stabilità interna ed esterna, tempo continuo e discreto'},
+    {t:'Linearizzazione', h:4, d:'Linearizzazione e stabilità locale attorno a un punto di funzionamento'},
+    {t:'Retroazione dello stato e osservatori', h:11, d:'Raggiungibilità e osservabilità, retroazione statica degli stati, osservatore asintotico, regolatore'},
+    {t:'Risposta al gradino e regime permanente', h:5, d:'Sistemi del primo e del secondo ordine, risposta in regime permanente'},
+    {t:'Schemi a blocchi e MATLAB', h:6, d:'Retroazione dall\'uscita, algebra dei blocchi, simulazione con MATLAB e Simulink'},
+    {t:'Diagrammi e criterio di Nyquist', h:12, d:'Diagrammi di Bode, polari, di Nyquist e di Nichols, criterio di Nyquist, margini di stabilità'},
+    {t:'Errori a regime e specifiche', h:12, d:'Inseguimento di ingressi polinomiali, reiezione dei disturbi, specifiche statiche e dinamiche'},
+    {t:'Progetto del controllore', h:12, d:'Compensazione in frequenza: reti anticipatrici, attenuatrici e integro-derivative'},
+    {t:'Sistemi campionati e PID', h:8, d:'Controllo a dati campionati, filtri digitali, controllori PID'},
+  ]},
+];
+const corsoBy = code => CORSI.find(c => c.code === code);
+const schedaUrl = code => `https://didattica.polito.it/pls/portal30/sviluppo.guide.visualizza?p_cod_ins=${code}&p_a_acc=2027`;
+
 /* ---------- PoliTo ---------- */
 let presetConfirm = false;
 function renderPolito(){
   $('#polito-table').innerHTML = POLITO_EXAMS.map(e =>
     `<tr><td>${esc(e.name)}</td><td class="num">${e.cfu}</td><td>${e.per}°</td><td>${esc(e.sess)}</td></tr>`).join('') +
-    '<tr><td>Lingua inglese</td><td class="muted">da verificare</td><td class="muted">—</td><td class="muted">Idoneità o certificazione</td></tr>';
+    '<tr><td>Lingua inglese I livello</td><td class="num">3</td><td>1° e 2°</td><td class="muted">Test di livello o certificazione</td></tr>';
   const row = $('#preset-row');
   const hasOwn = !S.isExample && S.exams.length > 0;
   if (presetConfirm) {
@@ -909,16 +1147,208 @@ $('#pq-start').addEventListener('click', () => {
   renderQuiz(out, qs);
 });
 
+
+/* ---------- Pagine d'esame ---------- */
+const LEVELS = [[0,'Da fare'],[25,'Letto'],[50,'Capito'],[75,'Esercitato'],[100,'Pronto']];
+const SELF = [[0,'Mai visto'],[0.33,'Ne ho sentito parlare'],[0.66,'Lo so abbastanza'],[1,'Lo so bene']];
+let curCorso = null;
+function cState(c){ const code = typeof c === 'string' ? c : c.code; S.courses = S.courses || {}; return S.courses[code] || (S.courses[code] = { prog:{}, know:{} }); }
+function cWeights(c){ const tot = c.topics.reduce((a,t) => a + t.h, 0); return c.topics.map(t => t.h / tot); }
+const cBase = c => c.cfu * 15;   // ore di studio individuale stimate per l'esame (come nel planner)
+function cForecast(c){
+  const st = cState(c), w = cWeights(c), base = cBase(c);
+  return c.topics.map((t,i) => {
+    const p = (st.prog[i] || 0) / 100, k = st.know[i];
+    const known = Math.max(p, k == null ? 0 : k * 0.8);   // un test non basta a dire "pronto": vale al massimo l'80%
+    return Math.round(base * w[i] * (1 - known) * 2) / 2;
+  });
+}
+function cProgress(c){ const st = cState(c), w = cWeights(c); return c.topics.reduce((a,t,i) => a + w[i] * (st.prog[i] || 0), 0); }
+const cPlanExam = c => S.isExample ? null : S.exams.find(e => e.name.trim().toLowerCase() === c.name.toLowerCase());
+
+function renderCatalog(){
+  const box = $('#catalog'); if (!box) return;
+  box.innerHTML = [1,2,3].map(y => `<div class="cat-year"><h3>${y}° anno</h3>${
+    CORSI.filter(c => c.anno === y).map(c => {
+      const p = cProgress(c), st = cState(c), tested = Object.keys(st.know).length > 0;
+      return `<a class="cat-row" href="#corso-${c.code}"><span class="cat-name">${esc(c.name)}</span>
+        <span class="small muted num">${c.cfu} CFU · ${c.per}° per.</span>
+        <span class="bar" aria-hidden="true"><i style="width:${p.toFixed(0)}%;background:var(--accent)"></i></span>
+        <span class="small num">${Math.round(p)}%${tested ? ' · test fatto' : ''}</span></a>`;
+    }).join('')}</div>`).join('');
+}
+
+function renderCorsoHead(c){
+  const p = cProgress(c), rem = cForecast(c).reduce((a,b) => a + b, 0), e = cPlanExam(c);
+  const hasEst = c.topics.some(t => t.est);
+  $('#corso-head').innerHTML = `
+    <div class="card-head"><h2>${esc(c.name)}</h2>
+      <span class="row"><span class="pill">${c.cfu} CFU</span><span class="pill">${c.anno}° anno · ${c.per}° periodo</span></span></div>
+    <div class="bar" role="progressbar" aria-label="Avanzamento complessivo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(p)}"><i style="width:${p.toFixed(1)}%;background:var(--accent)"></i></div>
+    <div class="r1 small"><span><strong class="num">${Math.round(p)}%</strong> del programma preparato</span>
+      <span>Ti restano circa <strong class="num">${fmtH(rem)}</strong> di studio</span></div>
+    <div class="row">
+      <button class="primary" id="to-planner">${e ? 'Aggiorna le ore nel planner' : 'Aggiungi al planner'}</button>
+      <a class="btn" href="${schedaUrl(c.code)}" target="_blank" rel="noopener">Scheda ufficiale del corso</a>
+      <span class="small muted" id="planner-msg"></span>
+    </div>
+    <p class="verify">Argomenti dalla scheda ufficiale del corso (A.A. 2026/27). Le ore partono da 15 ore di studio per CFU e calano con i tuoi progressi e con i risultati del test.${hasEst ? ' Per gli argomenti segnati con "stima" la scheda non indica le ore: il peso è stimato.' : ''}</p>`;
+  $('#to-planner').onclick = () => corsoToPlanner(c);
+}
+
+function renderCorsoTopics(c){
+  const st = cState(c), w = cWeights(c), f = cForecast(c);
+  $('#corso-topics').innerHTML = `<div class="card-head"><h2>Argomenti</h2><span class="small muted">Segna a che punto sei</span></div>` +
+    c.topics.map((t,i) => {
+      const p = st.prog[i] || 0, k = st.know[i];
+      return `<div class="topic">
+        <div class="r1"><h3>${esc(t.t)}</h3><span class="small muted num">${Math.round(w[i]*100)}% del programma${t.est ? ' (stima)' : ''}</span></div>
+        <p class="small muted">${esc(t.d)}</p>
+        <div class="bar" role="progressbar" aria-label="Avanzamento ${esc(t.t)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p}"><i style="width:${p}%;background:${p >= 100 ? 'var(--ok)' : 'var(--accent)'}"></i></div>
+        <div class="levels" role="group" aria-label="Livello ${esc(t.t)}">${LEVELS.map(([v,l]) =>
+          `<button class="chip" data-i="${i}" data-v="${v}" aria-pressed="${p === v}">${l}</button>`).join('')}</div>
+        <p class="small">Da dedicare: <strong class="num">${fmtH(f[i])}</strong>${k != null ? ` <span class="muted">· test ${Math.round(k*100)}%</span>` : ''}</p>
+      </div>`;
+    }).join('');
+  $('#corso-topics').querySelectorAll('.chip').forEach(b => b.onclick = () => {
+    cState(c.code).prog[+b.dataset.i] = +b.dataset.v; save(); refreshCorso(); renderCatalog();
+  });
+}
+
+function refreshCorso(){ if (curCorso) { renderCorsoHead(curCorso); renderCorsoTopics(curCorso); } }
+
+function renderCorso(code){
+  const c = corsoBy(code); if (!c) return;
+  if (!curCorso || curCorso.code !== code) { $('#cq-out').hidden = true; $('#cq-out').innerHTML = ''; }
+  curCorso = c;
+  refreshCorso();
+  renderCorsoResult(c);
+}
+
+function renderCorsoResult(c){
+  const st = cState(c), box = $('#cq-result');
+  if (!Object.keys(st.know).length) { box.hidden = true; return; }
+  const f = cForecast(c), rows = c.topics.map((t,i) => ({ t, i, k: st.know[i], h: f[i] })).sort((a,b) => b.h - a.h);
+  box.hidden = false;
+  box.innerHTML = `<h3>Il tuo pronostico</h3>
+    <p class="small muted">Dal test del ${esc(parse(st.quizAt || key(today())).toLocaleDateString('it-IT', {day:'numeric', month:'long'}))}. Inizia dagli argomenti in alto.</p>
+    <div class="tbl-wrap"><table class="plan"><thead><tr><th>Argomento</th><th>Test</th><th>Ore</th></tr></thead><tbody>${
+      rows.map(r => `<tr><td>${esc(r.t.t)}</td><td class="num">${r.k == null ? '—' : Math.round(r.k*100) + '%'}</td><td class="num"><strong>${fmtH(r.h)}</strong></td></tr>`).join('')
+    }<tr><td><strong>Totale</strong></td><td></td><td class="num"><strong>${fmtH(f.reduce((a,b) => a + b, 0))}</strong></td></tr></tbody></table></div>`;
+}
+
+function corsoToPlanner(c){
+  const rem = cForecast(c).reduce((a,b) => a + b, 0);
+  let e = cPlanExam(c);
+  if (!e) {
+    if (S.isExample) { S.exams = []; S.log = []; }
+    const pe = POLITO_EXAMS.find(x => x.name === c.name);
+    e = { id: pe ? pe.id : 'c-' + c.code, name: c.name, cfu: c.cfu, diff: 2, tent: true,
+          date: pe ? pe.date : (c.per === 1 ? '2027-01-28' : '2027-06-24'),
+          start: pe ? (pe.start || '') : (c.per === 2 ? '2027-03-01' : '') };
+    S.exams.push(e);
+  }
+  const done = S.log.filter(l => l.e === e.id).reduce((a,l) => a + l.h, 0);
+  e.target = Math.max(5, Math.round(done + rem));
+  touch();
+  $('#planner-msg').textContent = `Fatto: il planner ora prevede ${fmtH(rem)} di studio per questo esame. Controlla la data dell'appello in Esami.`;
+}
+
+function finishAssessment(c, know){
+  const st = cState(c.code);
+  st.know = know; st.quizAt = key(today());
+  save(); refreshCorso(); renderCorsoResult(c); renderCatalog();
+  $('#cq-result').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+}
+
+function startSelfAssessment(c){
+  const out = $('#cq-out'); out.hidden = false;
+  const st = cState(c.code), val = {};
+  out.innerHTML = `<p class="small muted">Per ogni argomento scegli la risposta più sincera.</p>` + c.topics.map((t,i) => `
+    <div class="q"><h3>${esc(t.t)}</h3><div class="levels" role="group" aria-label="${esc(t.t)}">${
+      SELF.map(([v,l]) => `<button class="chip" data-i="${i}" data-v="${v}" aria-pressed="false">${l}</button>`).join('')}</div></div>`).join('') +
+    `<div class="row"><button class="primary" id="self-done" disabled>Calcola il pronostico</button><span class="small muted" id="self-left">Mancano ${c.topics.length} argomenti</span></div>`;
+  out.querySelectorAll('.chip').forEach(b => b.onclick = () => {
+    const i = +b.dataset.i; val[i] = +b.dataset.v;
+    out.querySelectorAll(`.chip[data-i="${i}"]`).forEach(x => x.setAttribute('aria-pressed', x === b));
+    const left = c.topics.length - Object.keys(val).length;
+    $('#self-left').textContent = left ? `Mancano ${left} argomenti` : 'Pronto';
+    $('#self-done').disabled = left > 0;
+  });
+  $('#self-done').onclick = () => { finishAssessment(c, { ...val }); out.innerHTML = '<p class="small">Autovalutazione salvata. Puoi rifarla quando vuoi.</p>'; };
+}
+
+async function startAiQuiz(c){
+  const out = $('#cq-out'), btn = $('#cq-ai'); out.hidden = false;
+  out.innerHTML = '<p class="muted">Sto preparando 2 domande per ogni argomento del programma ufficiale…</p>';
+  const sample = await getSample();
+  if (!sample) { out.innerHTML = '<p class="err">Il quiz AI non è disponibile in questa vista. Usa l\'autovalutazione rapida.</p>'; return; }
+  const batches = []; for (let i = 0; i < c.topics.length; i += 4) batches.push(c.topics.map((t,j) => j).slice(i, i + 4));
+  const prompt = b => `Sei un docente del Politecnico di Torino. Crea domande di verifica per il corso "${c.name}" (laurea in Ingegneria Informatica, ${c.anno}° anno).
+Per OGNI argomento qui sotto scrivi esattamente 2 domande a risposta multipla, di livello d'esame ma brevi, con 4 opzioni e una sola corretta. Le opzioni sbagliate devono essere plausibili. Niente LaTeX: scrivi le formule in testo semplice (per esempio x^2, sqrt(x), e^(2x)). Testi in italiano.
+Argomenti (nel campo "argomento" metti il numero indicato):
+${b.map(i => `${i}: ${c.topics[i].t}. ${c.topics[i].d}`).join('\n')}
+Rispondi SOLO con JSON valido in questo formato: {"domande":[{"argomento":0,"testo":"...","opzioni":["...","...","...","..."],"corretta":0,"spiegazione":"una frase"}]}`;
+  btn.disabled = true;
+  try {
+    const ask = b => sample.json(prompt(b)).catch(() => new Promise(r => setTimeout(r, 1500)).then(() => sample.json(prompt(b))));
+    const res = await Promise.allSettled(batches.map(ask));
+    const qs = [];
+    res.forEach((r, bi) => { if (r.status !== 'fulfilled') return;
+      ((r.value && r.value.domande) || []).forEach(q => {
+        const a = +q.argomento;
+        if (batches[bi].includes(a) && q.testo && Array.isArray(q.opzioni) && q.opzioni.length >= 2 && q.opzioni[+q.corretta] != null) qs.push({ ...q, argomento: a });
+      });
+    });
+    if (!qs.length) throw (res.find(r => r.status === 'rejected') || {}).reason || { code: 'invalid_json' };
+    renderAiQuiz(c, qs, res.some(r => r.status === 'rejected'));
+  } catch(e) { out.innerHTML = `<p class="err">${esc(aiError(e))} Intanto puoi usare l'autovalutazione rapida.</p>`; }
+  btn.disabled = false;
+}
+
+function renderAiQuiz(c, qs, partial){
+  const out = $('#cq-out'), score = {}, tot = {};
+  let answered = 0;
+  qs.forEach(q => tot[q.argomento] = (tot[q.argomento] || 0) + 1);
+  out.innerHTML = (partial ? '<p class="small muted">Alcuni argomenti non sono stati generati: il pronostico userà solo quelli presenti.</p>' : '') +
+    `<p class="small muted">${qs.length} domande generate dall'AI: in rari casi possono contenere errori.</p><div class="quiz"></div><p class="small" id="cq-left">Rispondi a tutte le domande per vedere il pronostico.</p>`;
+  const box = out.querySelector('.quiz');
+  qs.forEach((q, n) => {
+    const d = document.createElement('div'); d.className = 'q';
+    d.innerHTML = `<p class="small muted">${esc(c.topics[q.argomento].t)}</p><h3>${n+1}. ${esc(q.testo)}</h3>
+      <div class="opts">${q.opzioni.map((o,j) => `<button data-j="${j}">${esc(o)}</button>`).join('')}</div><p class="expl" hidden>${esc(q.spiegazione || '')}</p>`;
+    d.querySelectorAll('.opts button').forEach(b => b.addEventListener('click', () => {
+      const j = +b.dataset.j, right = +q.corretta;
+      d.querySelectorAll('.opts button').forEach(o => { o.disabled = true; if (+o.dataset.j === right) o.classList.add('right'); });
+      if (j === right) score[q.argomento] = (score[q.argomento] || 0) + 1; else b.classList.add('wrong');
+      d.querySelector('.expl').hidden = false;
+      answered++;
+      $('#cq-left').textContent = answered < qs.length ? `Mancano ${qs.length - answered} domande.` : 'Fatto! Ecco il tuo pronostico.';
+      if (answered === qs.length) {
+        const know = {}; Object.keys(tot).forEach(a => know[a] = (score[a] || 0) / tot[a]);
+        finishAssessment(c, know);
+      }
+    }));
+    box.appendChild(d);
+  });
+}
+$('#cq-ai').addEventListener('click', () => curCorso && startAiQuiz(curCorso));
+$('#cq-self').addEventListener('click', () => curCorso && startSelfAssessment(curCorso));
+
 /* ---------- Navigazione ---------- */
 const VIEWS = ['piano','esami','tutor','guida','polito'];
 function route(){
-  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'piano';
-  document.querySelectorAll('[data-v]').forEach(s => s.hidden = s.dataset.v !== v);
-  document.querySelectorAll('nav.tabs a').forEach(a => { if (a.dataset.view === v) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+  const h = location.hash.slice(1);
+  let v = VIEWS.includes(h) ? h : 'piano';
+  if (h.startsWith('corso-') && corsoBy(h.slice(6))) { v = 'corso'; renderCorso(h.slice(6)); window.scrollTo(0, 0); }
+  else curCorso = null;
+  const tab = v === 'corso' ? 'polito' : v;
+  document.querySelectorAll('section[data-v]').forEach(s => s.hidden = s.dataset.v !== v);
+  document.querySelectorAll('nav.tabs a').forEach(a => { if (a.dataset.view === tab) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
 }
 window.addEventListener('hashchange', route);
 
-function renderAll(){ renderPiano(); renderEsami(); renderGuida(); renderGloss(); renderSubjects(); renderPolito(); }
+function renderAll(){ renderPiano(); renderEsami(); renderGuida(); renderGloss(); renderSubjects(); renderPolito(); renderCatalog(); refreshCorso(); }
 route(); renderAll(); connect();
 })();
 </script>

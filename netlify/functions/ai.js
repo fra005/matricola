@@ -9,7 +9,7 @@
 //   AI_MAX_TOKENS facoltativa: lunghezza massima della risposta (predefinita 900; alzala per i modelli che "ragionano")
 
 const MAX_PROMPT = 8000;       // caratteri massimi per richiesta
-const LIMIT_PER_HOUR = 30;     // richieste per indirizzo IP all'ora (best effort)
+const LIMIT_PER_HOUR = 60;     // richieste per indirizzo IP all'ora (best effort)
 const hits = new Map();
 
 const reply = (statusCode, body) => ({

@@ -9,6 +9,7 @@ Web app che aiuta le matricole ad abituarsi allo studio universitario: un planne
 - **Tutor AI**: spiegazioni a tre livelli (semplice, normale, da esame) e quiz interattivi da 5 domande.
 - **Coach settimanale**: legge i progressi e dà consigli concreti per la settimana.
 - **Guida**: checklist della matricola, glossario universitario con ricerca e consigli sul metodo di studio.
+- **Pagine d'esame**: una pagina per ognuno dei 18 esami di Ingegneria Informatica al PoliTo, con gli argomenti presi dalle schede ufficiali dei corsi (A.A. 2026/27), una barra di progresso per argomento, un test di partenza (quiz AI con 2 domande per argomento oppure autovalutazione) e il pronostico delle ore da dedicare a ogni argomento, da inviare al planner.
 - **PoliTo**: sezione per Ingegneria Informatica al Politecnico di Torino, con gli esami del primo anno da caricare nel planner, una guida all'ateneo, schede di studio e quiz per materia che funzionano anche senza AI. CFU e date sono indicativi: il riferimento ufficiale è il piano carriera sul Portale della Didattica.
 
 ## Come usarla
