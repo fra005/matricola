@@ -107,7 +107,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:.85rem;font-weight:
 .bar i{display:block;height:100%;border-radius:999px}
 
 /* Editor esami */
-.ed-row{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,.7fr) minmax(0,1.3fr) minmax(0,1fr) minmax(0,.9fr) auto;gap:8px;align-items:end;padding-block:12px;border-top:1px solid var(--line)}
+.ed-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,.6fr) minmax(0,1.25fr) minmax(0,1.25fr) minmax(0,1fr) minmax(0,.8fr) auto;gap:8px;align-items:end;padding-block:12px;border-top:1px solid var(--line)}
 .ed-row:first-of-type{border-top:0}
 @media (max-width:760px){.ed-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.ed-row .wide{grid-column:1/-1}}
 .daychips{display:flex;flex-wrap:wrap;gap:6px}
@@ -139,6 +139,23 @@ dl.gloss dt{font-weight:700}
 dl.gloss dd{margin:2px 0 0;color:var(--muted)}
 .methods{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
 .method{border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:6px}
+/* PoliTo */
+.tbl-wrap{overflow-x:auto}
+table.plan{border-collapse:collapse;width:100%;font-size:.92rem}
+table.plan th,table.plan td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+table.plan th{font-size:.76rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+table.plan td.num{white-space:nowrap}
+details.scheda{border:1px solid var(--line);border-radius:8px;padding:0 14px}
+details.scheda summary{cursor:pointer;padding:12px 0;font-weight:700;display:flex;gap:10px;align-items:center;justify-content:space-between;list-style:none}
+details.scheda summary::-webkit-details-marker{display:none}
+details.scheda summary::after{content:"+";font-family:var(--f-mono);color:var(--muted)}
+details.scheda[open] summary::after{content:"–"}
+details.scheda .body{display:flex;flex-direction:column;gap:10px;padding-bottom:14px}
+details.scheda h4{margin:0;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+details.scheda ul{margin:0;padding-left:1.2em}
+.schede{display:flex;flex-direction:column;gap:8px}
+.pill{font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--ink);white-space:nowrap}
+.verify{font-size:.85rem;color:var(--muted);border-left:3px solid var(--mark);padding-left:10px}
 footer{margin-top:28px;color:var(--muted);font-size:.85rem;display:flex;gap:8px 16px;flex-wrap:wrap;justify-content:space-between}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -156,6 +173,7 @@ footer{margin-top:28px;color:var(--muted);font-size:.85rem;display:flex;gap:8px 
       <a href="#esami" data-view="esami">Esami</a>
       <a href="#tutor" data-view="tutor">Tutor AI</a>
       <a href="#guida" data-view="guida">Guida</a>
+      <a href="#polito" data-view="polito">PoliTo</a>
     </nav>
   </header>
 
@@ -271,6 +289,42 @@ footer{margin-top:28px;color:var(--muted);font-size:.85rem;display:flex;gap:8px 
         </div>
       </div>
     </section>
+    <!-- POLITO -->
+    <section id="v-polito" data-v="polito" hidden>
+      <div class="stack">
+        <div class="card">
+          <div class="card-head"><h2>Politecnico di Torino · Ingegneria Informatica</h2><span class="pill">Primo anno</span></div>
+          <p>Il primo anno è comune a quasi tutti i corsi di ingegneria del PoliTo: matematica, fisica, chimica, informatica e inglese. Puoi caricare questi esami nel planner con un clic e poi correggere le date con quelle del tuo calendario.</p>
+          <div class="tbl-wrap">
+            <table class="plan">
+              <thead><tr><th>Insegnamento</th><th>CFU</th><th>Periodo</th><th>Sessione d'esame</th></tr></thead>
+              <tbody id="polito-table"></tbody>
+            </table>
+          </div>
+          <p class="verify">CFU e periodi vengono da fonti pubbliche e possono cambiare da un anno all'altro. Il riferimento ufficiale è il tuo piano carriera sul Portale della Didattica.</p>
+          <div class="row" id="preset-row"><button class="primary" id="preset-btn">Carica questi esami nel planner</button></div>
+        </div>
+
+        <div class="grid">
+          <div class="card">
+            <h2>Come funziona al PoliTo</h2>
+            <div class="methods" id="polito-guide"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Quiz di allenamento</h2><span class="muted small">Funzionano anche senza AI</span></div>
+            <label class="f">Materia<select id="pq-subj"></select></label>
+            <div><button class="primary" id="pq-start">Inizia il quiz</button></div>
+            <div class="out" id="pq-out" hidden></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Schede di studio per materia</h2>
+          <p class="muted small">Argomenti tipici, errori frequenti e consigli. I programmi esatti sono nella scheda di ogni insegnamento sul Portale della Didattica.</p>
+          <div class="schede" id="schede"></div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer><span id="save-status">Salvato su questo browser</span><span>Le date e le regole variano da ateneo ad ateneo: controlla sempre il sito del tuo corso.</span></footer>
@@ -330,6 +384,87 @@ const METHODS = [
   ['Pomodoro','25 minuti di studio e 5 di pausa, telefono lontano. Dopo quattro cicli, una pausa lunga.'],
   ['Vai a ricevimento','Portare domande precise al docente chiarisce i dubbi e ti fa capire cosa conta per l\'esame.'],
 ];
+GLOSS.push(
+  ['TIL (PoliTo)','Test In Laib: il test d\'ingresso per i corsi di ingegneria del Politecnico di Torino, svolto nei laboratori informatici. Se lo ripeti, conta il punteggio migliore.'],
+  ['LAIB (PoliTo)','I laboratori informatici del Politecnico, dove si svolgono il TIL e alcuni esami al computer.'],
+  ['Portale della Didattica (PoliTo)','Il portale degli studenti PoliTo: orari, materiale e videolezioni dei corsi, iscrizione agli appelli, libretto e voti.'],
+  ['Periodo didattico','Al PoliTo l\'anno è diviso in due periodi didattici (semestri). Gli esami di un periodo si sostengono nella sessione che lo segue.']
+);
+
+const POLITO_EXAMS = [
+  {id:'pt-an1', name:'Analisi matematica I', cfu:10, per:1, sess:'Gennaio–febbraio', date:'2027-01-25', diff:3},
+  {id:'pt-inf', name:'Informatica', cfu:8, per:1, sess:'Gennaio–febbraio', date:'2027-02-01', diff:2},
+  {id:'pt-chi', name:'Chimica', cfu:8, per:1, sess:'Gennaio–febbraio', date:'2027-02-08', diff:2},
+  {id:'pt-alg', name:'Algebra lineare e geometria', cfu:10, per:2, sess:'Giugno–luglio', date:'2027-06-21', diff:2, start:'2027-03-01'},
+  {id:'pt-fis', name:'Fisica I', cfu:10, per:2, sess:'Giugno–luglio', date:'2027-06-28', diff:3, start:'2027-03-01'},
+];
+const POLITO_GUIDE = [
+  ['Portale della Didattica','Il tuo punto di partenza: orario, materiale e videolezioni dei corsi, iscrizione agli appelli, libretto. Controllalo ogni settimana.'],
+  ['Due periodi, tre sessioni','Gli esami del 1° periodo si danno a gennaio–febbraio, quelli del 2° a giugno–luglio. A settembre c\'è la sessione per recuperare.'],
+  ['Iscriviti agli appelli in tempo','L\'iscrizione si fa sul Portale ed è chiusa qualche giorno prima dell\'appello. Segna le scadenze appena escono.'],
+  ['Leggi la scheda di ogni corso','Lì trovi programma, testi consigliati e regole d\'esame: scritto, orale, prove al computer, eventuali prove in itinere e se puoi rifiutare il voto.'],
+  ['Esercitazioni e temi d\'esame','Analisi, Algebra e Fisica si superano facendo esercizi. Segui le esercitazioni e allenati sui testi degli appelli passati.'],
+  ['Primo semestre, priorità','Analisi I è spesso l\'esame più impegnativo del primo periodo: dagli più ore fin da subito, senza trascurare Informatica e Chimica.'],
+];
+const SCHEDE = [
+  {name:'Analisi matematica I', meta:'10 CFU · 1° periodo',
+   arg:['Numeri reali e complessi','Successioni, limiti e forme indeterminate','Continuità, derivate e studio di funzione','Formula di Taylor e confronti asintotici (o-piccolo)','Integrali definiti e impropri','Serie numeriche','Equazioni differenziali lineari'],
+   err:['Dimenticare il dominio prima di studiare una funzione','Usare de l\'Hôpital senza verificarne le ipotesi','Sbagliare segni e ordini negli sviluppi di Taylor'],
+   tip:['Taylor serve ovunque (limiti, serie, integrali impropri): imparalo bene','Ogni settimana fai gli esercizi della settimana, non accumulare','Allenati sui temi d\'esame con il tempo dell\'esame']},
+  {name:'Informatica', meta:'8 CFU · 1° periodo',
+   arg:['Rappresentazione dell\'informazione: binario, complemento a due','Variabili, tipi, condizioni e cicli','Vettori, matrici e stringhe','Funzioni e passaggio dei parametri','Lettura e scrittura di file','Algoritmi di base: ricerca e ordinamento'],
+   err:['Uscire dai limiti di un vettore (v[5] in un vettore da 5)','Dimenticare il terminatore \'\\0\' nelle stringhe','Scrivere tutto il programma e provarlo solo alla fine'],
+   tip:['Programma tutti i giorni, anche 30 minuti','Allenati nelle stesse condizioni dell\'esame (al computer o su carta: leggi la scheda del corso)','Prima scrivi l\'algoritmo a parole, poi il codice']},
+  {name:'Chimica', meta:'8 CFU · 1° periodo',
+   arg:['Struttura dell\'atomo e tavola periodica','Legami chimici e geometria molecolare','Stechiometria e bilanciamento','Stato gassoso e soluzioni','Termodinamica ed equilibrio chimico','Acidi, basi e pH','Elettrochimica'],
+   err:['Confondere grammi e moli','Non bilanciare la reazione prima dei calcoli','Perdere le unità di misura nei passaggi'],
+   tip:['La stechiometria va allenata ogni giorno con esercizi numerici','Scrivi sempre le unità di misura accanto ai numeri','Ripassa la teoria con domande brevi: spesso fa parte dell\'esame']},
+  {name:'Algebra lineare e geometria', meta:'10 CFU · 2° periodo',
+   arg:['Sistemi lineari e metodo di Gauss','Matrici, determinante e rango','Spazi vettoriali, basi e dimensione','Applicazioni lineari: nucleo e immagine','Autovalori, autovettori e diagonalizzazione','Prodotto scalare e ortogonalità','Rette e piani nello spazio'],
+   err:['Errori di calcolo nella riduzione a scala','Dichiarare diagonalizzabile una matrice senza confrontare molteplicità algebrica e geometrica','Confondere nucleo e immagine'],
+   tip:['Ricontrolla ogni calcolo: un segno sbagliato rovina tutto l\'esercizio','Cerca il significato geometrico dei concetti, aiuta a ricordarli','Impara le definizioni con precisione: all\'orale contano']},
+  {name:'Fisica I', meta:'10 CFU · 2° periodo',
+   arg:['Cinematica del punto','Dinamica e principi di Newton','Lavoro ed energia','Quantità di moto e urti','Sistemi di punti e corpo rigido','Gravitazione e oscillazioni','Termodinamica'],
+   err:['Diagramma delle forze incompleto','Sbagliare i segni rispetto al sistema di riferimento','Dimenticare le unità di misura o usarne di diverse'],
+   tip:['Disegna sempre lo schema prima di scrivere formule','Ricava le formule invece di memorizzarle','Controlla dimensioni e ordine di grandezza del risultato']},
+];
+const QUIZ = {
+  'Analisi matematica I':[
+    {testo:'Quanto vale il limite di sin(x)/x per x che tende a 0?', opzioni:['0','1','∞','Non esiste'], corretta:1, spiegazione:'È un limite notevole: sin(x)/x → 1 per x → 0.'},
+    {testo:'Qual è la derivata di e^(2x)?', opzioni:['e^(2x)','2e^(2x)','e^(2x)/2','2x·e^(2x−1)'], corretta:1, spiegazione:'Regola della catena: la derivata di e^(g(x)) è g\'(x)·e^(g(x)), qui g\'(x) = 2.'},
+    {testo:'La serie Σ 1/n, per n da 1 a infinito:', opzioni:['converge a 1','converge a 2','diverge','oscilla'], corretta:2, spiegazione:'È la serie armonica: diverge, anche se i suoi termini tendono a 0.'},
+    {testo:'Lo sviluppo di Taylor di e^x in 0 fino al secondo ordine è:', opzioni:['1 + x','1 + x + x²','1 + x + x²/2','x + x²/2'], corretta:2, spiegazione:'e^x = 1 + x + x²/2 + o(x²), perché tutte le derivate di e^x in 0 valgono 1.'},
+    {testo:'Quanto vale l\'integrale di x tra 0 e 1?', opzioni:['1','1/2','2','0'], corretta:1, spiegazione:'Una primitiva è x²/2, che vale 1/2 in 1 e 0 in 0.'},
+  ],
+  'Informatica':[
+    {testo:'In C, qual è l\'indice del primo elemento di un vettore?', opzioni:['0','1','−1','Dipende dal compilatore'], corretta:0, spiegazione:'In C gli indici partono da 0.'},
+    {testo:'Con la dichiarazione int v[5]; qual è l\'ultimo elemento valido?', opzioni:['v[5]','v[4]','v[6]','v[0]'], corretta:1, spiegazione:'Gli elementi validi vanno da v[0] a v[4]: v[5] è fuori dal vettore.'},
+    {testo:'Quale carattere termina una stringa in C?', opzioni:['\'\\n\'','\'\\0\'','\' \'','\'.\''], corretta:1, spiegazione:'Le stringhe in C terminano con il carattere nullo \'\\0\'.'},
+    {testo:'Come si scrive 13 in binario?', opzioni:['1011','1101','1110','1001'], corretta:1, spiegazione:'13 = 8 + 4 + 1, quindi 1101.'},
+    {testo:'Cosa stampa: int a = 7, b = 2; printf("%d", a / b);', opzioni:['3.5','3','4','Errore'], corretta:1, spiegazione:'La divisione tra interi tronca la parte decimale: 7 / 2 = 3.'},
+  ],
+  'Chimica':[
+    {testo:'Qual è il valore approssimato del numero di Avogadro?', opzioni:['6,022 × 10²³','3,0 × 10⁸','9,81','1,6 × 10⁻¹⁹'], corretta:0, spiegazione:'Una mole contiene circa 6,022 × 10²³ particelle.'},
+    {testo:'Quante moli ci sono in 18 g di acqua (massa molare 18 g/mol)?', opzioni:['0,5','1','18','2'], corretta:1, spiegazione:'moli = massa / massa molare = 18 / 18 = 1.'},
+    {testo:'Qual è il pH di una soluzione con [H⁺] = 10⁻³ M?', opzioni:['3','−3','11','7'], corretta:0, spiegazione:'pH = −log[H⁺] = −log(10⁻³) = 3.'},
+    {testo:'Che tipo di legame c\'è nel cloruro di sodio (NaCl)?', opzioni:['Covalente puro','Ionico','Metallico','A idrogeno'], corretta:1, spiegazione:'Na cede un elettrone a Cl: si formano ioni Na⁺ e Cl⁻ tenuti insieme da attrazione elettrostatica.'},
+    {testo:'Nella reazione bilanciata 2H₂ + O₂ → ?H₂O, quanto vale il coefficiente dell\'acqua?', opzioni:['1','2','3','4'], corretta:1, spiegazione:'4 atomi di H e 2 di O a sinistra: servono 2 molecole di H₂O.'},
+  ],
+  'Algebra lineare e geometria':[
+    {testo:'Qual è il determinante della matrice [[1, 2], [3, 4]]?', opzioni:['−2','2','10','−10'], corretta:0, spiegazione:'1·4 − 2·3 = 4 − 6 = −2.'},
+    {testo:'A è una matrice 3×3 di rango 2. Il sistema omogeneo Ax = 0 ha:', opzioni:['solo la soluzione nulla','infinite soluzioni, uno spazio di dimensione 1','nessuna soluzione','infinite soluzioni, uno spazio di dimensione 2'], corretta:1, spiegazione:'Per il teorema del rango: dim nucleo = 3 − rango = 1. Un sistema omogeneo ha sempre almeno la soluzione nulla.'},
+    {testo:'Quali sono gli autovalori della matrice diagonale [[2, 0], [0, 3]]?', opzioni:['0 e 5','2 e 3','6','1 e 6'], corretta:1, spiegazione:'Gli autovalori di una matrice diagonale sono gli elementi sulla diagonale.'},
+    {testo:'Quanti vettori ha una base di ℝ³?', opzioni:['2','3','4','Infiniti'], corretta:1, spiegazione:'La dimensione di ℝ³ è 3, quindi ogni base ha 3 vettori.'},
+    {testo:'Due vettori u e v sono ortogonali quando:', opzioni:['u · v = 0','u · v = 1','u = −v','|u| = |v|'], corretta:0, spiegazione:'Ortogonali significa prodotto scalare nullo.'},
+  ],
+  'Fisica I':[
+    {testo:'Qual è l\'unità di misura della forza nel Sistema Internazionale?', opzioni:['joule','newton','watt','pascal'], corretta:1, spiegazione:'1 N = 1 kg·m/s².'},
+    {testo:'Un corpo cade da fermo senza attrito (g = 9,8 m/s²). Che velocità ha dopo 2 s?', opzioni:['9,8 m/s','19,6 m/s','4,9 m/s','39,2 m/s'], corretta:1, spiegazione:'v = g·t = 9,8 · 2 = 19,6 m/s.'},
+    {testo:'Qual è l\'energia cinetica di una massa di 2 kg che si muove a 3 m/s?', opzioni:['6 J','9 J','18 J','3 J'], corretta:1, spiegazione:'E = ½·m·v² = ½ · 2 · 9 = 9 J.'},
+    {testo:'Il terzo principio della dinamica dice che azione e reazione:', opzioni:['agiscono sullo stesso corpo','sono uguali e opposte e agiscono su corpi diversi','si annullano sempre','esistono solo negli urti'], corretta:1, spiegazione:'Sono uguali e opposte ma applicate a corpi diversi, quindi non si annullano a vicenda.'},
+    {testo:'In un urto completamente anelastico si conserva:', opzioni:['l\'energia cinetica','la quantità di moto','entrambe','nessuna delle due'], corretta:1, spiegazione:'Senza forze esterne la quantità di moto si conserva sempre; l\'energia cinetica in questo urto no.'},
+  ],
+};
 const COLORS = ['--e0','--e1','--e2','--e3','--e4','--e5'];
 
 /* ---------- Stato ---------- */
@@ -407,7 +542,7 @@ function computePlan(){
   exams.forEach(e => { rem[e.id] = Math.max(0, target(e) - (doneBefore[e.id]||0)); last[e.id] = study.filter(k => k < e.date).length; });
   const plan = {};
   study.forEach((dk, i) => {
-    const act = exams.filter(e => i < last[e.id] && rem[e.id] > 0.01);
+    const act = exams.filter(e => i < last[e.id] && rem[e.id] > 0.01 && (!e.start || dk >= e.start));
     const p = {}; let sum = 0;
     act.forEach(e => { p[e.id] = rem[e.id] / (last[e.id] - i); sum += p[e.id]; });
     const scale = sum > H ? H / sum : 1;
@@ -500,13 +635,13 @@ function renderPiano(){
     const dateTxt = e.date ? parse(e.date).toLocaleDateString('it-IT', {day:'numeric', month:'short'}) : '';
     const row = document.createElement('div'); row.className = 'exam-row';
     row.innerHTML = `<div class="r1"><h3><i class="dot" style="background:${colorOf(e.id)}"></i>${esc(e.name)}</h3>
-        <span class="small"><strong>${when}</strong> <span class="muted">${esc(dateTxt)}</span></span></div>
+        <span class="small"><strong>${when}</strong> <span class="muted">${esc(dateTxt)}${e.tent ? ' · data indicativa' : ''}</span></span></div>
       <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="Avanzamento ${esc(e.name)}"><i style="width:${pct.toFixed(1)}%;background:${colorOf(e.id)}"></i></div>
       <div class="r1 small muted"><span class="num">${fmtH(done)} di ${fmtH(tg)}</span><span class="num">${e.cfu} CFU</span></div>`;
     el.appendChild(row);
   });
   const cfu = S.exams.reduce((a,e) => a + (+e.cfu||0), 0);
-  $('#cfu-total').textContent = `${cfu} CFU nel semestre`;
+  $('#cfu-total').textContent = `${cfu} CFU in totale`;
 }
 
 /* ---------- Render: Esami ---------- */
@@ -534,7 +669,8 @@ function renderEsami(){
     r.innerHTML = `
       <label class="f wide">Nome<input id="n-${e.id}" value="${esc(e.name)}"></label>
       <label class="f">CFU<input id="c-${e.id}" type="number" min="1" max="30" value="${e.cfu}"></label>
-      <label class="f">Data appello<input id="d-${e.id}" type="date" value="${esc(e.date||'')}"></label>
+      <label class="f">Inizio studio<input id="s-${e.id}" type="date" value="${esc(e.start||'')}"></label>
+      <label class="f">Data appello${e.tent ? ' (indicativa)' : ''}<input id="d-${e.id}" type="date" value="${esc(e.date||'')}"></label>
       <label class="f">Difficoltà<select id="x-${e.id}">
         <option value="1"${e.diff==1?' selected':''}>Tranquillo</option>
         <option value="2"${e.diff==2?' selected':''}>Impegnativo</option>
@@ -544,7 +680,8 @@ function renderEsami(){
     const on = (sel, fn) => r.querySelector(sel).addEventListener('change', ev => { fn(ev.target.value); touch(); });
     on(`#n-${e.id}`, v => e.name = v.trim() || 'Esame');
     on(`#c-${e.id}`, v => { const old = target(e), oldAuto = old === (+e.cfu||6)*15; e.cfu = Math.max(1, +v||1); if (oldAuto) e.target = e.cfu*15; });
-    on(`#d-${e.id}`, v => e.date = v);
+    on(`#d-${e.id}`, v => { e.date = v; e.tent = false; });
+    on(`#s-${e.id}`, v => e.start = v);
     on(`#x-${e.id}`, v => { const d = +v; const base = e.cfu*15; e.diff = d; e.target = Math.round(base * (d===3 ? 1.15 : d===1 ? 0.85 : 1)); });
     on(`#h-${e.id}`, v => e.target = Math.max(5, +v||5));
     const del = r.querySelector('.del');
@@ -696,8 +833,43 @@ function renderQuiz(out, qs){
   });
 }
 
+/* ---------- PoliTo ---------- */
+let presetConfirm = false;
+function renderPolito(){
+  $('#polito-table').innerHTML = POLITO_EXAMS.map(e =>
+    `<tr><td>${esc(e.name)}</td><td class="num">${e.cfu}</td><td>${e.per}°</td><td>${esc(e.sess)}</td></tr>`).join('') +
+    '<tr><td>Lingua inglese</td><td class="muted">da verificare</td><td class="muted">—</td><td class="muted">Idoneità o certificazione</td></tr>';
+  const row = $('#preset-row');
+  const hasOwn = !S.isExample && S.exams.length > 0;
+  if (presetConfirm) {
+    row.innerHTML = `<div class="confirm"><span>Sostituisco i tuoi ${S.exams.length} esami e le ore registrate?</span><button class="danger" id="pc-yes">Sostituisci</button><button class="ghost" id="pc-no">Annulla</button></div>`;
+    $('#pc-yes').onclick = () => { presetConfirm = false; loadPreset(); };
+    $('#pc-no').onclick = () => { presetConfirm = false; renderPolito(); };
+  } else {
+    row.innerHTML = '<button class="primary" id="preset-btn">Carica questi esami nel planner</button>';
+    $('#preset-btn').onclick = () => { if (hasOwn) { presetConfirm = true; renderPolito(); } else loadPreset(); };
+  }
+}
+function loadPreset(){
+  S.exams = POLITO_EXAMS.map(e => ({ id:e.id, name:e.name, cfu:e.cfu, date:e.date, diff:e.diff, start:e.start || '', tent:true,
+    target: Math.round(e.cfu * 12 * (e.diff === 3 ? 1.15 : 1)) }));
+  S.log = []; S.settings.weeklyHours = Math.max(S.settings.weeklyHours, 30);
+  touch(); location.hash = 'esami';
+}
+$('#polito-guide').innerHTML = POLITO_GUIDE.map(([t,d]) => `<div class="method"><h3>${esc(t)}</h3><p class="small muted">${esc(d)}</p></div>`).join('');
+$('#schede').innerHTML = SCHEDE.map(s => `<details class="scheda"><summary><span>${esc(s.name)}</span><span class="pill">${esc(s.meta)}</span></summary>
+  <div class="body"><div><h4>Argomenti tipici</h4><ul>${s.arg.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
+  <div><h4>Errori frequenti</h4><ul>${s.err.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
+  <div><h4>Consigli</h4><ul>${s.tip.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div></div></details>`).join('');
+$('#pq-subj').innerHTML = Object.keys(QUIZ).map(k => `<option>${esc(k)}</option>`).join('');
+$('#pq-start').addEventListener('click', () => {
+  const out = $('#pq-out'); out.hidden = false;
+  const qs = [...QUIZ[$('#pq-subj').value]].sort(() => Math.random() - 0.5);
+  renderQuiz(out, qs);
+});
+
 /* ---------- Navigazione ---------- */
-const VIEWS = ['piano','esami','tutor','guida'];
+const VIEWS = ['piano','esami','tutor','guida','polito'];
 function route(){
   const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'piano';
   document.querySelectorAll('[data-v]').forEach(s => s.hidden = s.dataset.v !== v);
@@ -705,7 +877,7 @@ function route(){
 }
 window.addEventListener('hashchange', route);
 
-function renderAll(){ renderPiano(); renderEsami(); renderGuida(); renderGloss(); renderSubjects(); }
+function renderAll(){ renderPiano(); renderEsami(); renderGuida(); renderGloss(); renderSubjects(); renderPolito(); }
 route(); renderAll(); connect();
 })();
 </script>
