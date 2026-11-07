@@ -82,6 +82,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:.85rem;font-weight:
 .session{display:grid;grid-template-columns:auto 6px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
 .session input{width:22px;height:22px;accent-color:var(--accent)}
 .session .sw{width:6px;height:100%;min-height:28px;border-radius:3px}
+.session .when{display:block;font-size:.8rem;color:var(--muted);font-weight:400}
 .session.done .name{text-decoration:line-through;color:var(--muted)}
 .tag{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--warn-bg);color:var(--warn);margin-left:6px;vertical-align:middle}
 
@@ -223,6 +224,12 @@ footer{margin-top:28px;color:var(--muted);font-size:.85rem;display:flex;gap:8px 
             <div class="card-head"><h2>Il tuo libretto</h2><span class="muted small num" id="cfu-total"></span></div>
             <div id="exam-list"></div>
           </div>
+          <div class="card" id="gcal-card">
+            <div class="card-head"><h2>Google Calendar</h2><span class="small muted" id="gcal-when"></span></div>
+            <p class="small muted">Leggo solo quando sei occupato, non i titoli dei tuoi eventi, e metto lo studio negli spazi liberi. Le sessioni vanno in un calendario separato, "Matricola · Studio".</p>
+            <div class="row"><button class="primary" id="gcal-sync" hidden>Collega Google Calendar</button><button class="ghost" id="gcal-off" hidden>Scollega</button></div>
+            <p class="small" id="gcal-status" role="status"></p>
+          </div>
           <div class="card">
             <div class="card-head"><h2>Coach settimanale</h2></div>
             <p class="muted small">Il coach legge i tuoi progressi e ti dà consigli concreti per la settimana.</p>
@@ -247,6 +254,16 @@ footer{margin-top:28px;color:var(--muted);font-size:.85rem;display:flex;gap:8px 
           <div>
             <p class="small" style="font-weight:700;color:var(--muted);margin-bottom:6px">Giorni in cui studi</p>
             <div class="daychips" id="daychips"></div>
+          </div>
+          <div>
+            <p class="small" style="font-weight:700;color:var(--muted);margin-bottom:6px">Con Google Calendar</p>
+            <div class="row">
+              <label class="f" style="flex:1 1 120px">Studio dalle<input type="time" id="win-from" step="900"></label>
+              <label class="f" style="flex:1 1 120px">alle<input type="time" id="win-to" step="900"></label>
+              <label class="f" style="flex:1 1 140px">Blocchi al massimo da<select id="win-block"><option value="45">45 min</option><option value="60">1 ora</option><option value="90">1 ora e mezza</option><option value="120">2 ore</option></select></label>
+              <label class="f" style="flex:1 1 120px">Pausa<select id="win-pause"><option value="10">10 min</option><option value="15">15 min</option><option value="20">20 min</option><option value="30">30 min</option></select></label>
+              <label class="f" style="flex:1 1 160px">Margine attorno agli impegni<select id="win-buffer"><option value="0">Nessuno</option><option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option></select></label>
+            </div>
           </div>
         </div>
         <div class="card">
@@ -608,7 +625,8 @@ function computePlan(){
     const act = exams.filter(e => i < last[e.id] && rem[e.id] > 0.01 && (!e.start || dk >= e.start));
     const p = {}; let sum = 0;
     act.forEach(e => { p[e.id] = rem[e.id] / (last[e.id] - i); sum += p[e.id]; });
-    const scale = sum > H ? H / sum : 1;
+    const cap = calCapacity(dk), Hd = cap == null ? H : Math.min(H, cap);
+    const scale = sum > Hd ? Hd / sum : 1;
     const items = [];
     act.forEach(e => {
       const raw = p[e.id] * scale;
@@ -648,15 +666,17 @@ function renderPiano(){
   } else if (!items.length) {
     list.innerHTML = `<li class="muted">${S.settings.days.includes(t.getDay()) ? 'Niente in programma oggi: sei in pari.' : 'Oggi è un giorno di riposo. Ricaricati.'}</li>`;
   }
+  const slotsToday = calHas(P.tk) ? place(P.tk, items) : null;
   items.forEach(it => {
     const ex = exById(it.e); if (!ex) return;
+    const times = slotsToday ? slotsToday.filter(s => s.e === it.e).map(s => `${fmtMin(s.a)}–${fmtMin(s.b)}`).join(', ') : '';
     const done = S.log.some(l => l.d === P.tk && l.e === it.e);
     const li = document.createElement('li');
     li.className = 'session' + (done ? ' done' : '');
     const cid = 'chk-' + it.e;
     li.innerHTML = `<input type="checkbox" id="${cid}" ${done ? 'checked' : ''}>
       <span class="sw" style="background:${colorOf(it.e)}"></span>
-      <label for="${cid}" class="name">${esc(ex.name)}${it.final ? '<span class="tag">Ripasso finale</span>' : ''}</label>
+      <label for="${cid}" class="name">${esc(ex.name)}${it.final ? '<span class="tag">Ripasso finale</span>' : ''}${times ? `<span class="when num">${times}</span>` : ''}</label>
       <span class="num">${fmtH(it.h)}</span>`;
     li.querySelector('input').addEventListener('change', ev => {
       S.log = S.log.filter(l => !(l.d === P.tk && l.e === it.e));
@@ -711,6 +731,9 @@ function renderPiano(){
 let confirmDel = null;
 function renderEsami(){
   $('#weekly').value = S.settings.weeklyHours;
+  const w = S.settings.win || {};
+  $('#win-from').value = w.from || '09:00'; $('#win-to').value = w.to || '20:00';
+  $('#win-block').value = String(w.block || 90); $('#win-pause').value = String(w.pause || 15); $('#win-buffer').value = String(w.buffer == null ? 15 : w.buffer);
   const n = S.settings.days.length || 1;
   $('#perday').textContent = `Circa ${fmtH(S.settings.weeklyHours / n)} per giorno di studio.`;
   const chips = $('#daychips'); chips.innerHTML = '';
@@ -759,6 +782,11 @@ function renderEsami(){
     ed.appendChild(r);
   });
 }
+['from','to','block','pause','buffer'].forEach(k => $('#win-' + k).addEventListener('change', ev => {
+  S.settings.win = Object.assign({}, S.settings.win, { [k]: ['from','to'].includes(k) ? ev.target.value : +ev.target.value });
+  if (toMin(S.settings.win.to || '20:00') <= toMin(S.settings.win.from || '09:00')) S.settings.win.to = fmtMin(Math.min(23*60+45, toMin(S.settings.win.from || '09:00') + 60));
+  touch();
+}));
 $('#weekly').addEventListener('change', ev => { S.settings.weeklyHours = Math.min(80, Math.max(1, +ev.target.value || 1)); touch(); });
 $('#add-ex').addEventListener('click', () => {
   const id = 'e' + Date.now().toString(36);
@@ -1335,6 +1363,196 @@ function renderAiQuiz(c, qs, partial){
 $('#cq-ai').addEventListener('click', () => curCorso && startAiQuiz(curCorso));
 $('#cq-self').addEventListener('click', () => curCorso && startSelfAssessment(curCorso));
 
+
+/* ---------- Google Calendar ----------
+   Lettura: solo disponibilità (free/busy) del calendario principale, senza titoli né dettagli.
+   Scrittura: solo nel calendario "Matricola · Studio" creato dall'app.
+   Il Client ID OAuth è pubblico per natura (non è un segreto): si crea su Google Cloud, vedi README. */
+const GOOGLE_CLIENT_ID = window.MATRICOLA_GOOGLE_CLIENT_ID || '';   // incolla qui l'ID client OAuth (…apps.googleusercontent.com)
+const GSCOPES = 'https://www.googleapis.com/auth/calendar.freebusy https://www.googleapis.com/auth/calendar.app.created';
+const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Rome'; } catch(e) { return 'Europe/Rome'; } })();
+const CAL_DAYS = 28, WRITE_DAYS = 14;
+let gToken = null, gTokenExp = 0, gisPromise = null;
+
+const toMin = s => { const [h, m] = String(s || '0:0').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+const fmtMin = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+function calWin(){
+  const w = S.settings.win || {};
+  return { from: toMin(w.from || '09:00'), to: toMin(w.to || '20:00'), block: +w.block || 90, pause: +w.pause || 15, buffer: w.buffer == null ? 15 : +w.buffer };
+}
+const calHas = dk => !!(S.cal && S.cal.connected && S.cal.busy && (dk in S.cal.busy));
+// Intervalli liberi (in minuti dalla mezzanotte) nella fascia di studio, tolti gli impegni e un margine attorno
+function freeSlots(dk){
+  const W = calWin();
+  const busy = (S.cal.busy[dk] || []).map(([a, b]) => [a - W.buffer, b + W.buffer]).sort((x, y) => x[0] - y[0]);
+  const slots = []; let cur = W.from;
+  for (const [a, b] of busy) {
+    if (b <= cur) continue;
+    if (a > cur) slots.push([cur, Math.min(a, W.to)]);
+    cur = Math.max(cur, b);
+    if (cur >= W.to) break;
+  }
+  if (cur < W.to) slots.push([cur, W.to]);
+  return slots.filter(([a, b]) => b - a >= 30);
+}
+// Mette le ore del giorno nei buchi liberi: blocchi lunghi al massimo W.block, con W.pause di pausa tra un blocco e l'altro
+function place(dk, items){
+  const W = calWin(), slots = freeSlots(dk).map(s => s.slice()), out = [];
+  for (const it of items) {
+    let need = Math.round(it.h * 60);
+    for (const s of slots) {
+      while (need >= 30 && s[1] - s[0] >= 30) {
+        const len = Math.min(W.block, need, s[1] - s[0]);
+        out.push({ e: it.e, a: s[0], b: s[0] + len, final: it.final });
+        s[0] += len + W.pause; need -= len;
+      }
+      if (need < 30) break;
+    }
+  }
+  return out;
+}
+// Ore di studio che entrano davvero in quel giorno (null se il calendario non copre il giorno)
+function calCapacity(dk){
+  if (!calHas(dk)) return null;
+  return place(dk, [{ e: '_', h: 24 }]).reduce((a, s) => a + (s.b - s.a), 0) / 60;
+}
+
+function loadGis(){
+  if (!gisPromise) gisPromise = new Promise((res, rej) => {
+    if (window.google && google.accounts && google.accounts.oauth2) return res();
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client'; s.async = true;
+    s.onload = () => res(); s.onerror = () => { gisPromise = null; rej({ message: 'Non riesco a caricare il login di Google.' }); };
+    document.head.appendChild(s);
+  });
+  return gisPromise;
+}
+function getToken(){
+  if (gToken && Date.now() < gTokenExp - 60000) return Promise.resolve(gToken);
+  return loadGis().then(() => new Promise((res, rej) => {
+    const tc = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID, scope: GSCOPES,
+      callback: r => {
+        if (r.error) return rej({ message: r.error === 'access_denied' ? 'Hai negato l\'accesso a Google Calendar.' : 'Accesso a Google non riuscito.' });
+        if (google.accounts.oauth2.hasGrantedAllScopes && !google.accounts.oauth2.hasGrantedAllScopes(r, ...GSCOPES.split(' ')))
+          return rej({ message: 'Servono entrambi i permessi (disponibilità e calendario dello studio): riprova e spunta tutte le caselle.' });
+        gToken = r.access_token; gTokenExp = Date.now() + (+r.expires_in || 3600) * 1000; res(gToken);
+      },
+      error_callback: e => rej({ message: e && e.type === 'popup_closed' ? 'Hai chiuso la finestra di Google.' : 'La finestra di accesso a Google è stata bloccata: consenti i popup e riprova.' }),
+    });
+    tc.requestAccessToken({ prompt: S.cal && S.cal.connected ? '' : 'consent' });
+  }));
+}
+async function gcal(method, path, body){
+  const r = await fetch('https://www.googleapis.com/calendar/v3' + path, {
+    method, headers: { Authorization: 'Bearer ' + gToken, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  if (r.status === 204) return null;
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw { status: r.status, message: (d.error && d.error.message) || ('Errore ' + r.status) };
+  return d;
+}
+function gcalStatus(t, isErr){ const p = $('#gcal-status'); p.textContent = t; p.className = 'small' + (isErr ? ' err' : ''); }
+
+async function syncCalendar(){
+  const btn = $('#gcal-sync'); btn.disabled = true;
+  try {
+    gcalStatus('Accesso a Google…');
+    await getToken();
+    // 1. Leggo quando sei occupato
+    gcalStatus('Leggo i tuoi impegni…');
+    const t0 = today(), tMax = addDays(t0, CAL_DAYS);
+    const fb = await gcal('POST', '/freeBusy', { timeMin: t0.toISOString(), timeMax: tMax.toISOString(), timeZone: TZ, items: [{ id: 'primary' }] });
+    const cal = fb.calendars && fb.calendars.primary;
+    if (!cal || (cal.errors && cal.errors.length)) throw { message: 'Google non ha restituito la disponibilità del calendario principale.' };
+    const busy = {};
+    for (let i = 0; i < CAL_DAYS; i++) busy[key(addDays(t0, i))] = [];
+    (cal.busy || []).forEach(({ start, end }) => {
+      const s = new Date(start), e = new Date(end);
+      let d = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+      while (d < e) {
+        const next = addDays(d, 1), dk = key(d);
+        if (dk in busy) busy[dk].push([Math.round((Math.max(s, d) - d) / 60000), Math.round((Math.min(e, next) - d) / 60000)]);
+        d = next;
+      }
+    });
+    S.cal = Object.assign({}, S.cal, { connected: true, busy, syncedAt: Date.now(), impegni: (cal.busy || []).length });
+    S.isExample = false; save(); renderAll();
+
+    // 2. Calendario dello studio (creato dall'app, l'unico che l'app può modificare)
+    gcalStatus('Preparo il calendario "Matricola · Studio"…');
+    let calId = S.cal.calId;
+    if (calId) { try { await gcal('GET', '/calendars/' + encodeURIComponent(calId)); } catch(e) { calId = null; } }
+    if (!calId) {
+      const c = await gcal('POST', '/calendars', { summary: 'Matricola · Studio', description: 'Sessioni di studio pianificate da Matricola', timeZone: TZ });
+      calId = c.id; S.cal.calId = calId; save();
+    }
+    const base = '/calendars/' + encodeURIComponent(calId) + '/events';
+
+    // 3. Tolgo le sessioni future già scritte e scrivo quelle nuove
+    gcalStatus('Aggiorno le sessioni di studio…');
+    const now = new Date(); let page = '';
+    do {
+      const l = await gcal('GET', `${base}?timeMin=${encodeURIComponent(now.toISOString())}&singleEvents=true&maxResults=250${page ? '&pageToken=' + encodeURIComponent(page) : ''}`);
+      for (const ev of (l.items || [])) await gcal('DELETE', `${base}/${encodeURIComponent(ev.id)}`);
+      page = l.nextPageToken || '';
+    } while (page);
+
+    const P = computePlan(); let n = 0;
+    for (let i = 0; i < WRITE_DAYS; i++) {
+      const d = addDays(t0, i), dk = key(d);
+      for (const s of place(dk, P.plan[dk] || [])) {
+        const st = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, s.a), en = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, s.b);
+        if (en <= now) continue;
+        const ex = exById(s.e);
+        await gcal('POST', base, {
+          summary: `Studio: ${ex ? ex.name : 'esame'}${s.final ? ' (ripasso finale)' : ''}`,
+          description: 'Sessione pianificata da Matricola negli spazi liberi della tua giornata.',
+          start: { dateTime: st.toISOString(), timeZone: TZ }, end: { dateTime: en.toISOString(), timeZone: TZ },
+          reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: 10 }] },
+        });
+        n++;
+      }
+    }
+    // Gli appelli come eventi di tutto il giorno
+    const tk = key(t0); let a = 0;
+    for (const e of S.exams.filter(e => e.date && e.date >= tk)) {
+      await gcal('POST', base, { summary: `Appello: ${e.name}${e.tent ? ' (data indicativa)' : ''}`, description: 'Appello d\'esame inserito in Matricola.',
+        start: { date: e.date }, end: { date: key(addDays(parse(e.date), 1)) } });
+      a++;
+    }
+    S.cal.written = n; save(); renderGcal();
+    gcalStatus(`Fatto: ${S.cal.impegni} impegni letti, ${n} sessioni di studio e ${a} appelli scritti nel calendario "Matricola · Studio".`);
+  } catch(e) {
+    gcalStatus((e && e.message ? e.message : 'Sincronizzazione non riuscita.') + (e && e.status === 401 ? ' Riprova: l\'accesso era scaduto.' : ''), true);
+    if (e && e.status === 401) gToken = null;
+  }
+  btn.disabled = false;
+}
+
+function disconnectCalendar(){
+  try { if (gToken && window.google) google.accounts.oauth2.revoke(gToken, () => {}); } catch(e) {}
+  gToken = null;
+  S.cal = S.cal && S.cal.calId ? { calId: S.cal.calId } : null;
+  save(); renderAll();
+  gcalStatus('Scollegato. Il planner torna a usare le ore settimanali. Il calendario "Matricola · Studio" resta su Google: puoi eliminarlo da lì.');
+}
+
+function renderGcal(){
+  const card = $('#gcal-card'); if (!card) return;
+  const avail = useServer && !!GOOGLE_CLIENT_ID;
+  $('#gcal-sync').hidden = !avail;
+  $('#gcal-off').hidden = !(avail && S.cal && S.cal.connected);
+  $('#gcal-sync').textContent = S.cal && S.cal.connected ? 'Sincronizza di nuovo' : 'Collega Google Calendar';
+  const when = $('#gcal-when');
+  when.textContent = S.cal && S.cal.connected && S.cal.syncedAt ? 'Aggiornato ' + new Date(S.cal.syncedAt).toLocaleString('it-IT', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+  if (!avail && !$('#gcal-status').textContent) gcalStatus(onClaude || !useServer
+    ? 'Disponibile sul sito pubblico dell\'app: da qui Google non consente l\'accesso.'
+    : 'Non ancora attivo: chi gestisce il sito deve inserire il Client ID di Google (vedi README).');
+}
+$('#gcal-sync').addEventListener('click', syncCalendar);
+$('#gcal-off').addEventListener('click', disconnectCalendar);
+if (useServer && GOOGLE_CLIENT_ID) loadGis().catch(() => {});
+
 /* ---------- Navigazione ---------- */
 const VIEWS = ['piano','esami','tutor','guida','polito'];
 function route(){
@@ -1348,7 +1566,7 @@ function route(){
 }
 window.addEventListener('hashchange', route);
 
-function renderAll(){ renderPiano(); renderEsami(); renderGuida(); renderGloss(); renderSubjects(); renderPolito(); renderCatalog(); refreshCorso(); }
+function renderAll(){ renderGcal(); renderPiano(); renderEsami(); renderGuida(); renderGloss(); renderSubjects(); renderPolito(); renderCatalog(); refreshCorso(); }
 route(); renderAll(); connect();
 })();
 </script>

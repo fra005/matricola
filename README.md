@@ -16,6 +16,26 @@ Web app che aiuta le matricole ad abituarsi allo studio universitario: un planne
 
 È un unico file HTML, senza installazione: apri `index.html` nel browser, oppure pubblicalo con GitHub Pages (Settings → Pages → Deploy from a branch → `main`, cartella `/`).
 
+## Google Calendar
+
+Sul sito pubblico lo studente può collegare Google Calendar:
+
+- l'app legge **solo la disponibilità** del calendario principale (permesso `calendar.freebusy`): vede quando sei occupato, non i titoli né i dettagli degli eventi;
+- il planner usa ogni giorno al massimo il tempo libero reale nella fascia oraria scelta in **Esami → Il tuo tempo** (blocchi, pause e margine attorno agli impegni);
+- le sessioni dei prossimi 14 giorni e gli appelli vengono scritti in un calendario separato, **"Matricola · Studio"**, creato dall'app (permesso `calendar.app.created`: l'app non può modificare gli altri calendari).
+
+### Attivazione (una volta, da chi gestisce il sito)
+
+1. Su [Google Cloud Console](https://console.cloud.google.com) crea un progetto.
+2. In **API e servizi → Libreria** abilita **Google Calendar API**.
+3. In **Google Auth Platform** (schermata di consenso OAuth) scegli tipo **Esterno**, inserisci nome dell'app ed email di supporto, aggiungi gli ambiti `.../auth/calendar.freebusy` e `.../auth/calendar.app.created`. Finché l'app è in modalità **Test**, aggiungi tra gli **utenti di test** gli account Google che possono usarla (massimo 100).
+4. In **Client** crea un **ID client OAuth** di tipo **Applicazione web**, con origine JavaScript autorizzata `https://matricola-primo-anno.netlify.app`.
+5. Copia l'**ID client** (finisce con `.apps.googleusercontent.com`) in `index.html`, nella costante `GOOGLE_CLIENT_ID`. Non è un segreto: è normale che stia nel codice della pagina.
+
+Per aprire l'app a più di 100 persone serve la verifica dell'app da parte di Google (privacy policy, dominio verificato).
+
+Nella versione su claude.ai l'integrazione non è disponibile: lì la pagina non può collegarsi a Google.
+
 ## AI sul sito con la tua chiave API
 
 Su claude.ai tutor e coach usano Claude. Sul sito (Netlify) passano dalla funzione `netlify/functions/ai.js`, che custodisce la chiave API sul server: la chiave non finisce mai nel browser né nel repository. Funziona con qualsiasi API compatibile con OpenAI.
