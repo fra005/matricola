@@ -6,9 +6,9 @@
 //   AI_MODEL     obbligatoria: il nome del modello da usare
 //   AI_BASE_URL  facoltativa: indirizzo dell'API (predefinito: https://api.openai.com/v1)
 //   ACCESS_CODE  consigliata: codice che gli utenti devono inserire nell'app per usare l'AI
+//   AI_MAX_TOKENS facoltativa: lunghezza massima della risposta (predefinita 900; alzala per i modelli che "ragionano")
 
 const MAX_PROMPT = 8000;       // caratteri massimi per richiesta
-const MAX_TOKENS = 900;        // lunghezza massima della risposta
 const LIMIT_PER_HOUR = 30;     // richieste per indirizzo IP all'ora (best effort)
 const hits = new Map();
 
@@ -22,6 +22,7 @@ export default async (req, context) => {
   const model = process.env.AI_MODEL;
   const base = (process.env.AI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
   const access = process.env.ACCESS_CODE;
+  const maxTokens = Math.min(8000, Math.max(100, parseInt(process.env.AI_MAX_TOKENS || '900', 10) || 900));
   if (!key || !model) return reply(503, { code: 'not_configured', error: 'AI non configurata sul server.' });
 
   let body;
@@ -44,7 +45,7 @@ export default async (req, context) => {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
       body: JSON.stringify({
         model,
-        max_tokens: MAX_TOKENS,
+        max_tokens: maxTokens,
         temperature: 0.5,
         messages: [
           { role: 'system', content: 'Sei un tutor universitario per matricole italiane. Rispondi in italiano, in modo chiaro e corretto. Se la richiesta chiede JSON, rispondi solo con JSON valido.' },

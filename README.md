@@ -27,6 +27,9 @@ Su Netlify, in **Site configuration → Environment variables**, imposta:
 | `AI_MODEL` | Sì | Il nome del modello (per esempio uno economico del tuo fornitore) |
 | `AI_BASE_URL` | No | Indirizzo dell'API; predefinito `https://api.openai.com/v1` |
 | `ACCESS_CODE` | Consigliata | Codice che gli utenti inseriscono nella scheda Tutor AI per usare l'AI |
+| `AI_MAX_TOKENS` | No | Lunghezza massima della risposta (predefinita 900). Alzala, per esempio a 4000, con i modelli che "ragionano" come Gemini |
+
+Esempio con Google Gemini: `AI_BASE_URL` = `https://generativelanguage.googleapis.com/v1beta/openai`, chiave creata su Google AI Studio, un modello Flash come `AI_MODEL`.
 
 Il sito deve essere collegato a questo repository (Site configuration → Build & deploy → Link repository) perché la funzione venga pubblicata. Imposta anche un limite di spesa mensile dal tuo fornitore: il sito è pubblico.
 
