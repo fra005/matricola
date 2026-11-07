@@ -267,6 +267,8 @@ footer{margin-top:28px;color:var(--muted);font-size:.85rem;display:flex;gap:8px 
               </details>
               <div class="row"><button class="primary" id="ics-sync">Leggi gli impegni</button></div>
             </div>
+            <label class="f" id="file-box">Oppure carica un file .ics (per esempio l'orario delle lezioni)
+              <input type="file" id="ics-file" accept=".ics,text/calendar"></label>
             <div class="row"><button id="gcal-sync" hidden>Collega Google Calendar</button><button class="ghost" id="ics-export" hidden>Scarica le sessioni (.ics)</button><button class="ghost" id="gcal-off" hidden>Scollega</button></div>
             <p class="small" id="gcal-status" role="status"></p>
           </div>
@@ -454,6 +456,7 @@ footer{margin-top:28px;color:var(--muted);font-size:.85rem;display:flex;gap:8px 
 
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/locales/it.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ical.js@1.5.0/build/ical.min.js"></script>
 <script>
 (() => {
 const $ = s => document.querySelector(s);
@@ -1524,6 +1527,60 @@ async function syncIcs(url, quiet){
   if (btn) btn.disabled = false;
 }
 
+// Legge un calendario iCal nel browser: restituisce solo gli intervalli occupati (stesse regole della funzione ics)
+function icsBusy(text, from, to){
+  const comp = new ICAL.Component(ICAL.parse(text));
+  comp.getAllSubcomponents('vtimezone').forEach(tz => { try { ICAL.TimezoneService.register(tz); } catch(e) {} });
+  const main = new Map(), exceptions = [];
+  comp.getAllSubcomponents('vevent').forEach(v => { if (v.hasProperty('recurrence-id')) exceptions.push(v); else main.set(v.getFirstPropertyValue('uid') || Math.random(), new ICAL.Event(v)); });
+  exceptions.forEach(v => { const m = main.get(v.getFirstPropertyValue('uid')); if (m) { try { m.relateException(v); } catch(e) {} } else main.set(Math.random(), new ICAL.Event(v)); });
+  const isFree = c => String(c.getFirstPropertyValue('transp') || '').toUpperCase() === 'TRANSPARENT' || String(c.getFirstPropertyValue('status') || '').toUpperCase() === 'CANCELLED';
+  const busy = [], push = (a, b) => { if (b > from && a < to) busy.push([new Date(Math.max(a, from)).toISOString(), new Date(Math.min(b, to)).toISOString()]); };
+  for (const ev of main.values()) {
+    if (!ev.startDate || ev.startDate.isDate || isFree(ev.component)) continue;   // "tutto il giorno" e "libero" non bloccano
+    if (ev.isRecurring()) {
+      const it = ev.iterator(); let next, n = 0;
+      while ((next = it.next()) && n++ < 5000) {
+        const occ = ev.getOccurrenceDetails(next), a = occ.startDate.toJSDate();
+        if (a >= to) break;
+        if (occ.item && isFree(occ.item.component)) continue;
+        push(a, occ.endDate.toJSDate());
+      }
+    } else push(ev.startDate.toJSDate(), (ev.endDate || ev.startDate).toJSDate());
+  }
+  return busy.sort((x, y) => x[0] < y[0] ? -1 : 1);
+}
+const FILE_DAYS = 200;
+function loadIcsFile(file){
+  if (!file) return;
+  if (!window.ICAL) return gcalStatus('Non riesco a caricare il lettore di calendari. Controlla la connessione e ricarica la pagina.', true);
+  if (file.size > 3 * 1024 * 1024) return gcalStatus('Il file è troppo grande (massimo 3 MB).', true);
+  const rd = new FileReader();
+  rd.onerror = () => gcalStatus('Non riesco a leggere il file.', true);
+  rd.onload = () => {
+    const text = String(rd.result || '');
+    if (!/BEGIN:VCALENDAR/i.test(text)) return gcalStatus('Questo file non è un calendario iCal (.ics).', true);
+    try {
+      const t0 = today(), intervals = icsBusy(text, t0, addDays(t0, FILE_DAYS));
+      S.cal = { connected: true, source: 'file', fileName: file.name, intervals, impegni: intervals.length, syncedAt: Date.now(),
+        busy: busyByDay(intervals, t0, CAL_DAYS), busyDay: key(t0), calId: S.cal && S.cal.calId };
+      S.isExample = false; save(); renderAll();
+      const lastD = intervals.length ? new Date(intervals[intervals.length - 1][1]).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+      gcalStatus(intervals.length
+        ? `Fatto: ${intervals.length} impegni caricati da "${file.name}", fino al ${lastD}. Il piano ora evita questi orari.`
+        : `Nel file "${file.name}" non ci sono impegni a orario nei prossimi mesi.`);
+    } catch(e) { gcalStatus('Non riesco a leggere questo calendario: il file potrebbe essere danneggiato.', true); }
+    $('#ics-file').value = '';
+  };
+  rd.readAsText(file);
+}
+// Il file è una fotografia: ogni giorno ricalcolo gli impegni delle prossime 4 settimane dagli intervalli salvati
+function refreshFileBusy(){
+  if (S.cal && S.cal.connected && S.cal.source === 'file' && Array.isArray(S.cal.intervals) && S.cal.busyDay !== key(today())) {
+    S.cal.busy = busyByDay(S.cal.intervals, today(), CAL_DAYS); S.cal.busyDay = key(today());
+  }
+}
+
 // File .ics con le sessioni dei prossimi 14 giorni e gli appelli, da importare in qualsiasi calendario
 function icsExport(){
   const P = computePlan(), t0 = today(), stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
@@ -1669,14 +1726,16 @@ function renderGcal(){
   $('#gcal-sync').hidden = !google;
   $('#gcal-sync').textContent = conn && S.cal.source === 'google' ? 'Sincronizza di nuovo Google' : 'Oppure collega Google Calendar';
   $('#ics-export').hidden = !useServer || !S.exams.length;
-  $('#gcal-off').hidden = !(useServer && conn);
+  $('#gcal-off').hidden = !conn;
   $('#gcal-when').textContent = conn && S.cal.syncedAt ? 'Aggiornato ' + new Date(S.cal.syncedAt).toLocaleString('it-IT', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
-  if (!useServer && !$('#gcal-status').textContent) gcalStatus('Disponibile sul sito pubblico dell\'app: da qui non è possibile leggere calendari esterni.');
+  if (!$('#gcal-status').textContent && conn && S.cal.source === 'file') gcalStatus(`Impegni dal file "${S.cal.fileName}". Per aggiornarli carica di nuovo il file.`);
+  else if (!useServer && !$('#gcal-status').textContent) gcalStatus('Qui puoi caricare un file .ics. Il collegamento con link funziona sul sito pubblico dell\'app.');
 }
 $('#gcal-sync').addEventListener('click', syncCalendar);
 $('#gcal-off').addEventListener('click', disconnectCalendar);
 $('#ics-sync').addEventListener('click', () => { const u = $('#ics-url').value.trim(); if (!u) { $('#ics-url').focus(); return gcalStatus('Incolla prima il link del tuo calendario.', true); } syncIcs(u); });
 $('#ics-export').addEventListener('click', icsExport);
+$('#ics-file').addEventListener('change', ev => loadIcsFile(ev.target.files && ev.target.files[0]));
 // All'apertura riaggiorno da solo gli impegni del link iCal se sono vecchi di più di 3 ore
 if (useServer && S.cal && S.cal.source === 'ics' && S.cal.icsUrl && Date.now() - (S.cal.syncedAt || 0) > 3 * 3600000) setTimeout(() => syncIcs(S.cal.icsUrl, true), 500);
 if (useServer && GOOGLE_CLIENT_ID) loadGis().catch(() => {});
@@ -1780,7 +1839,7 @@ function route(){
 }
 window.addEventListener('hashchange', route);
 
-function renderAll(){ if (fc) { fc.refetchEvents(); renderWeekInfo(); } renderGcal(); renderPiano(); renderEsami(); renderGuida(); renderGloss(); renderSubjects(); renderPolito(); renderCatalog(); refreshCorso(); }
+function renderAll(){ refreshFileBusy(); if (fc) { fc.refetchEvents(); renderWeekInfo(); } renderGcal(); renderPiano(); renderEsami(); renderGuida(); renderGloss(); renderSubjects(); renderPolito(); renderCatalog(); refreshCorso(); }
 route(); renderAll(); connect();
 })();
 </script>

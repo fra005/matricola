@@ -21,6 +21,8 @@ Web app che aiuta le matricole ad abituarsi allo studio universitario: un planne
 
 Nel **Piano**, la scheda **Il tuo calendario** accetta il link privato iCal di Google Calendar, Apple iCloud, Outlook, Proton Calendar, Nextcloud e di qualsiasi calendario compatibile. La funzione `netlify/functions/ics.js` legge il calendario con [ical.js](https://github.com/kewisch/ical.js) (eventi ricorrenti, eccezioni, fusi orari) e restituisce all'app **solo gli intervalli occupati**, senza titoli né dettagli. Gli eventi "tutto il giorno" e quelli segnati come "libero" non bloccano il tempo. Gli impegni si aggiornano da soli quando l'app viene riaperta dopo più di 3 ore.
 
+In alternativa si può **caricare un file .ics** (per esempio l'orario delle lezioni esportato dal Portale): il file viene letto nel browser con ical.js, non viene inviato a nessun server, e funziona anche nella versione su claude.ai. Vengono salvati solo gli orari occupati dei prossimi 200 giorni.
+
 Con **Scarica le sessioni (.ics)** le sessioni dei prossimi 14 giorni e gli appelli si importano in qualsiasi calendario.
 
 Il link iCal è privato come una password: resta salvato solo nel browser (o nell'account) di chi lo inserisce.
