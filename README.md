@@ -17,7 +17,7 @@ Web app che aiuta le matricole ad abituarsi allo studio universitario: un planne
 
 ## AI sul sito con la tua chiave API
 
-Su claude.ai tutor e coach usano Claude. Sul sito (Netlify) passano dalla funzione `netlify/functions/ai.mjs`, che custodisce la chiave API sul server: la chiave non finisce mai nel browser né nel repository. Funziona con qualsiasi API compatibile con OpenAI.
+Su claude.ai tutor e coach usano Claude. Sul sito (Netlify) passano dalla funzione `netlify/functions/ai.js`, che custodisce la chiave API sul server: la chiave non finisce mai nel browser né nel repository. Funziona con qualsiasi API compatibile con OpenAI.
 
 Su Netlify, in **Site configuration → Environment variables**, imposta:
 
