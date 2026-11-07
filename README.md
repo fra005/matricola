@@ -1,4 +1,4 @@
-# Matricola
+# PACE — Personal Academic Control Engine
 
 Web app che aiuta le matricole ad abituarsi allo studio universitario: un planner di studio verso gli appelli, un tutor AI e una guida al primo anno.
 
